@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daniel Stallone — Quantitative Finance</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFFFFF;
+  --bg2: #F8F8F6;
+  --bg3: #F2F1EE;
+  --border: #E5E4E0;
+  --border2: #D0CFC9;
+  --text: #111110;
+  --text2: #5C5B57;
+  --text3: #9B9A96;
+  --accent: #1B4332;
+  --accent-light: #D1FAE5;
+  --accent-mid: #6EE7B7;
+  --blue: #1E40AF;
+  --blue-light: #DBEAFE;
+  --amber: #92400E;
+  --amber-light: #FEF3C7;
+  --red-light: #FEE2E2;
+  --red: #991B1B;
+  --sans: 'Geist', sans-serif;
+  --serif: 'Instrument Serif', serif;
+  --mono: 'Geist Mono', monospace;
+  --radius: 10px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.05);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* ─── HEADER ─── */
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2.5rem;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.logo-name {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.logo-title {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.header-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.header-link {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text2);
+  text-decoration: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.header-link:hover { background: var(--bg2); color: var(--text); }
+
+.header-cta {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--text);
+  text-decoration: none;
+  padding: 7px 16px;
+  border-radius: 7px;
+  transition: opacity 0.15s;
+}
+.header-cta:hover { opacity: 0.85; }
+
+/* ─── STATUS PILL ─── */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-light);
+  border: 1px solid var(--accent-mid);
+  padding: 4px 12px;
+  border-radius: 20px;
+  opacity: 0;
+  animation: fadeIn 0.4s ease 0.6s forwards;
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* ─── TAB NAVIGATION ─── */
+.tab-nav-wrapper {
+  position: sticky;
+  top: 62px;
+  z-index: 100;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-nav {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2.5rem;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--text3);
+  background: none;
+  border: none;
+  padding: 14px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  letter-spacing: -0.01em;
+}
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px 2px 0 0;
+  transform: scaleX(0);
+  transition: transform 0.2s ease;
+}
+.tab-btn:hover { color: var(--text2); }
+.tab-btn.active { color: var(--text); font-weight: 500; }
+.tab-btn.active::after { transform: scaleX(1); }
+
+.tab-icon {
+  width: 16px; height: 16px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.tab-btn.active .tab-icon { opacity: 1; }
+
+.tab-badge {
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--bg3);
+  color: var(--text3);
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.tab-btn.active .tab-badge {
+  background: var(--text);
+  color: #fff;
+}
+
+/* ─── TAB PANELS ─── */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ─── PAGE WRAPPER ─── */
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 3.5rem 2.5rem 6rem;
+}
+
+/* ─── ABOUT TAB ─── */
+.about-hero {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 5rem;
+  align-items: center;
+  padding-bottom: 4rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4rem;
+}
+
+.about-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 1rem;
+}
+
+.about-headline {
+  font-family: var(--serif);
+  font-size: clamp(2.6rem, 4.5vw, 3.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+}
+.about-headline em { font-style: italic; color: var(--text2); }
+
+.about-subline {
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--text2);
+  line-height: 1.8;
+  margin-bottom: 2rem;
+  max-width: 520px;
+}
+
+.about-ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.btn-primary {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--text);
+  padding: 10px 22px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary:hover { opacity: 0.82; }
+
+.btn-secondary {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--text);
+  background: var(--bg);
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  text-decoration: none;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.btn-secondary:hover { background: var(--bg2); }
+
+/* Profile card */
+.profile-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-light), var(--accent-mid));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-size: 28px;
+  color: var(--accent);
+  margin-bottom: 1.25rem;
+  border: 3px solid #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-name {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.profile-sub {
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 1.5rem;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+.profile-stat {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.profile-stat-val {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.profile-stat-label {
+  font-size: 10px;
+  color: var(--text3);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-links { display: flex; flex-direction: column; gap: 8px; }
+.profile-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text2);
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 7px;
+  transition: background 0.15s;
+}
+.profile-link:hover { background: #fff; color: var(--text); }
+.profile-link-icon {
+  width: 28px; height: 28px;
+  background: var(--bg3);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  color: var(--text2);
+}
+
+/* About body */
+.about-body-section {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 4rem;
+  margin-bottom: 4rem;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.about-text { color: var(--text2); font-weight: 300; line-height: 1.9; }
+.about-text p + p { margin-top: 1rem; }
+
+.details-list { display: flex; flex-direction: column; }
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-key { color: var(--text3); font-weight: 400; white-space: nowrap; }
+.detail-val { color: var(--text); font-weight: 400; text-align: right; }
+.detail-val a { color: var(--accent); text-decoration: none; }
+.detail-val a:hover { text-decoration: underline; }
+
+/* Experience */
+.exp-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem 2rem;
+  box-shadow: var(--shadow-sm);
+}
+.exp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.exp-title { font-weight: 500; font-size: 15px; color: var(--text); margin-bottom: 3px; }
+.exp-company { font-size: 13px; color: var(--text3); }
+.exp-date {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--bg3);
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.exp-bullets { list-style: none; }
+.exp-bullets li {
+  font-size: 13.5px;
+  color: var(--text2);
+  font-weight: 300;
+  padding: 5px 0;
+  display: flex;
+  gap: 10px;
+  line-height: 1.6;
+}
+.exp-bullets li::before { content: '–'; color: var(--text3); flex-shrink: 0; }
+
+/* ─── PROJECTS TAB ─── */
+.projects-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.project-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.25s, border-color 0.25s;
+}
+.project-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border2);
+}
+
+.project-top {
+  padding: 2rem 2rem 0;
+}
+
+.project-tags { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 1rem; }
+.tag {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 5px;
+  letter-spacing: 0.02em;
+}
+.tag-green { background: var(--accent-light); color: var(--accent); }
+.tag-blue { background: var(--blue-light); color: var(--blue); }
+.tag-amber { background: var(--amber-light); color: var(--amber); }
+.tag-gray { background: var(--bg3); color: var(--text3); border: 1px solid var(--border); }
+.tag-red { background: var(--red-light); color: var(--red); }
+
+.project-title {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  margin-bottom: 0.6rem;
+  line-height: 1.25;
+}
+.project-desc {
+  font-size: 14px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.8;
+  margin-bottom: 1.5rem;
+}
+
+.project-bullets {
+  list-style: none;
+  margin-bottom: 1.5rem;
+}
+.project-bullets li {
+  font-size: 13.5px;
+  color: var(--text2);
+  font-weight: 300;
+  padding: 5px 0;
+  display: flex;
+  gap: 10px;
+  line-height: 1.65;
+  border-top: 1px solid var(--border);
+}
+.project-bullets li:last-child { border-bottom: 1px solid var(--border); }
+.project-bullets li::before { content: '→'; color: var(--text3); flex-shrink: 0; font-family: var(--mono); font-size: 12px; margin-top: 3px; }
+
+/* VaR metrics strip */
+.metrics-strip {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 1.25rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.metric-item { text-align: center; }
+.metric-val {
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.metric-val.loss { color: #DC2626; }
+.metric-label {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Method chips */
+.methods-section {
+  background: var(--bg3);
+  border-top: 1px solid var(--border);
+  padding: 1.25rem 2rem;
+}
+.methods-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+.methods-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.method-chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  background: #fff;
+  border: 1px solid var(--border2);
+  padding: 4px 10px;
+  border-radius: 5px;
+}
+
+/* Streamlit embed */
+.streamlit-wrapper { border-top: 1px solid var(--border); }
+.streamlit-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.window-dots { display: flex; gap: 6px; }
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot-r { background: #FF5F56; }
+.dot-y { background: #FFBD2E; }
+.dot-g { background: #27C93F; }
+.streamlit-url-bar {
+  flex: 1;
+  margin: 0 12px;
+  background: #fff;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  text-align: center;
+}
+.streamlit-open {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-mid);
+  padding: 4px 12px;
+  border-radius: 5px;
+  transition: opacity 0.15s;
+}
+.streamlit-open:hover { opacity: 0.8; }
+.streamlit-iframe { width: 100%; height: 620px; border: none; display: block; background: #f8f8f8; }
+
+/* Project footer */
+.project-footer {
+  padding: 1.25rem 2rem;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.project-link-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  padding: 7px 16px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+.project-link-btn:hover { background: var(--bg3); }
+.project-link-btn.primary { background: var(--text); color: #fff; border-color: var(--text); }
+.project-link-btn.primary:hover { opacity: 0.85; }
+
+/* ─── SKILLS TAB ─── */
+.skills-header-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 3rem;
+}
+.skill-stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  text-align: center;
+}
+.skill-stat-val {
+  font-family: var(--serif);
+  font-size: 2.2rem;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.skill-stat-label { font-size: 12px; color: var(--text3); }
+
+.skills-section { margin-bottom: 3rem; }
+.skills-section-title {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.skills-section-title .dot-label {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text);
+  display: inline-block;
+}
+
+.skill-bars { display: flex; flex-direction: column; gap: 10px; }
+.skill-bar-row {
+  display: grid;
+  grid-template-columns: 180px 1fr 36px;
+  gap: 12px;
+  align-items: center;
+}
+.skill-bar-name { font-size: 13.5px; color: var(--text); font-weight: 400; }
+.skill-bar-track {
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.skill-bar-fill {
+  height: 100%;
+  background: var(--text);
+  border-radius: 10px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.7s cubic-bezier(0.16,1,0.3,1);
+}
+.skill-bar-fill.animated { transform: scaleX(1); }
+.skill-pct {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  text-align: right;
+}
+
+.quant-tags-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.quant-tag {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  padding: 6px 13px;
+  border-radius: 7px;
+  cursor: default;
+  transition: all 0.15s;
+}
+.quant-tag:hover {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+}
+
+/* Skills 3-col grid */
+.skills-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+.skill-col-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+.skill-col-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.skill-col-items { display: flex; flex-direction: column; gap: 8px; }
+.skill-col-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.skill-col-item-name { color: var(--text2); font-weight: 300; }
+.skill-col-item-level {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg3);
+  color: var(--text3);
+}
+.skill-col-item-level.adv {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+/* ─── EDUCATION TAB ─── */
+.education-grid { display: flex; flex-direction: column; gap: 1.5rem; }
+.edu-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem 2.5rem;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.edu-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--text);
+  border-radius: 4px 0 0 4px;
+}
+.edu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+.edu-degree {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.edu-school { font-size: 14px; color: var(--text2); font-weight: 400; margin-bottom: 3px; }
+.edu-location { font-size: 12.5px; color: var(--text3); }
+.edu-date-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.edu-courses-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.edu-course-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.edu-chip {
+  font-size: 12px;
+  color: var(--text2);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 5px;
+}
+
+/* ─── CONTACT TAB ─── */
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+.contact-intro-heading {
+  font-family: var(--serif);
+  font-size: 2.4rem;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+.contact-intro-body {
+  font-size: 15px;
+  color: var(--text2);
+  font-weight: 300;
+  line-height: 1.9;
+  margin-bottom: 2rem;
+}
+.contact-cards { display: flex; flex-direction: column; gap: 10px; }
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.contact-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border2);
+}
+.contact-icon {
+  width: 38px; height: 38px;
+  background: var(--bg3);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text2);
+  flex-shrink: 0;
+  border: 1px solid var(--border2);
+}
+.contact-info { flex: 1; min-width: 0; }
+.contact-type { font-size: 11px; color: var(--text3); margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.05em; }
+.contact-value { font-size: 13.5px; color: var(--text); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.contact-arrow { font-size: 14px; color: var(--text3); }
+
+.contact-form-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem;
+}
+.form-heading {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+.form-subheading { font-size: 13px; color: var(--text3); margin-bottom: 1.5rem; }
+.form-group { margin-bottom: 1rem; }
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+.form-input, .form-textarea, .form-select {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px rgba(17,17,16,0.08);
+}
+.form-textarea { resize: vertical; min-height: 110px; }
+.form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239B9A96' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-submit {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: var(--text);
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.form-submit:hover { opacity: 0.85; }
+.form-success {
+  display: none;
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.tab-panel.active .page > * {
+  animation: fadeIn 0.35s ease both;
+}
+.tab-panel.active .page > *:nth-child(1) { animation-delay: 0.02s; }
+.tab-panel.active .page > *:nth-child(2) { animation-delay: 0.07s; }
+.tab-panel.active .page > *:nth-child(3) { animation-delay: 0.12s; }
+.tab-panel.active .page > *:nth-child(4) { animation-delay: 0.17s; }
+
+/* ─── TOOLTIP ─── */
+[data-tooltip] {
+  position: relative;
+  cursor: help;
+}
+[data-tooltip]:hover::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 999;
+}
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-name">Daniel Stallone</div>
+      <div class="logo-title">Quantitative Finance</div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        Open to Opportunities
+      </div>
+      <nav class="header-links">
+        <a href="https://www.linkedin.com/in/daniel-stallone" target="_blank" class="header-link">LinkedIn ↗</a>
+        <a href="https://github.com/danst03" target="_blank" class="header-link">GitHub ↗</a>
+      </nav>
+      <a href="mailto:ds148@fordham.edu" class="header-cta">Contact Me</a>
+    </div>
+  </div>
+</header>
+
+<!-- ─── TAB NAV ─── -->
+<div class="tab-nav-wrapper">
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('about', this)">
+      <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M2.5 13.5c0-3.038 2.462-5.5 5.5-5.5s5.5 2.462 5.5 5.5"/></svg>
+      About Me
+    </button>
+    <button class="tab-btn" onclick="switchTab('projects', this)">
+      <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 3V2M11 3V2M2 7h12"/></svg>
+      Projects
+      <span class="tab-badge">2</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('skills', this)">
+      <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,12 5,7 8,9 11,4 14,6"/></svg>
+      Skills
+    </button>
+    <button class="tab-btn" onclick="switchTab('education', this)">
+      <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5.5l6 3.5 6-3.5L8 2z"/><path d="M2 5.5v5M5 7.5v3.5c0 1.1 1.343 2 3 2s3-.9 3-2V7.5"/></svg>
+      Education
+    </button>
+    <button class="tab-btn" onclick="switchTab('contact', this)">
+      <svg class="tab-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M2 6l6 4 6-4"/></svg>
+      Contact
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ ABOUT ═══════════════════════════════ -->
+<div class="tab-panel active" id="panel-about">
+  <div class="page">
+
+    <div class="about-hero">
+      <div>
+        <div class="about-eyebrow">Quantitative Finance · New York, NY</div>
+        <h1 class="about-headline">Building <em>rigorous</em> quant systems from first principles</h1>
+        <p class="about-subline">MS Quantitative Finance candidate at Fordham's Gabelli School. I design production-grade risk engines, options pricing frameworks, and ML-powered financial models.</p>
+        <div class="about-ctas">
+          <a href="https://optionlab.streamlit.app/" target="_blank" class="btn-primary">↗ Launch OptionLab</a>
+          <button class="btn-secondary" onclick="switchTab('projects', document.querySelector('[onclick*=projects]'))">View Projects</button>
+          <a href="mailto:ds148@fordham.edu" class="btn-secondary">Email Me</a>
+        </div>
+      </div>
+
+      <div class="profile-card">
+        <div class="profile-avatar">DS</div>
+        <div class="profile-name">Daniel Stallone</div>
+        <div class="profile-sub">MS Quant Finance · Fordham University</div>
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <div class="profile-stat-val">7+</div>
+            <div class="profile-stat-label">VaR Methods</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-val">50k</div>
+            <div class="profile-stat-label">MC Paths</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-val">4.3k</div>
+            <div class="profile-stat-label">Days Tested</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-val">$10M</div>
+            <div class="profile-stat-label">Portfolio</div>
+          </div>
+        </div>
+        <div class="profile-links">
+          <a href="mailto:ds148@fordham.edu" class="profile-link"><span class="profile-link-icon">@</span>ds148@fordham.edu</a>
+          <a href="tel:5516660824" class="profile-link"><span class="profile-link-icon">#</span>551-666-0824</a>
+          <a href="https://www.linkedin.com/in/daniel-stallone" target="_blank" class="profile-link"><span class="profile-link-icon">in</span>daniel-stallone</a>
+          <a href="https://github.com/danst03" target="_blank" class="profile-link"><span class="profile-link-icon">gh</span>danst03</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="about-body-section">
+      <div>
+        <div class="section-label">Background</div>
+        <div class="about-text">
+          <p>I'm a quantitative finance graduate student at Fordham University's Gabelli School of Business. My work sits at the intersection of financial mathematics, statistical computing, and production-grade software engineering.</p>
+          <p>I design and implement end-to-end quantitative systems — from stochastic calculus-based options pricing engines (Black-Scholes PDE, Crank-Nicolson finite difference, PSOR/LCP for early exercise) to full market-risk analytics pipelines (multi-methodology VaR, EWMA covariance, Cholesky-based Monte Carlo, Kupiec & Christoffersen backtesting).</p>
+          <p>Prior to Fordham, I completed a BS in Economics with a minor in Finance at Narsee Monjee Institute of Management Studies in Mumbai, and interned at Jain Vinay & Associates, a chartered accountancy firm, where I managed financial data for 500+ monthly transactions and ensured 100% compliance in financial reporting accuracy.</p>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Details</div>
+        <div class="details-list">
+          <div class="detail-row"><span class="detail-key">Location</span><span class="detail-val">New York, NY</span></div>
+          <div class="detail-row"><span class="detail-key">Degree</span><span class="detail-val">MS Quant Finance</span></div>
+          <div class="detail-row"><span class="detail-key">School</span><span class="detail-val">Fordham · Gabelli</span></div>
+          <div class="detail-row"><span class="detail-key">Expected</span><span class="detail-val">Dec 2026</span></div>
+          <div class="detail-row"><span class="detail-key">Languages</span><span class="detail-val">English, Hindi</span></div>
+          <div class="detail-row"><span class="detail-key">GitHub</span><span class="detail-val"><a href="https://github.com/danst03" target="_blank">danst03 ↗</a></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Experience -->
+    <div class="section-label" style="margin-bottom:1.5rem;">Experience</div>
+    <div class="exp-card">
+      <div class="exp-header">
+        <div>
+          <div class="exp-title">Accounting & Audit Intern</div>
+          <div class="exp-company">Jain Vinay & Associates · Mumbai, India — Chartered Accountancy Firm</div>
+        </div>
+        <div class="exp-date">May – Jul 2024</div>
+      </div>
+      <ul class="exp-bullets">
+        <li>Managed documentation of financial transactions for 500+ monthly entries using Tally; oversaw data management to ensure accuracy across all records</li>
+        <li>Identified discrepancies in bank reconciliation for a pharmaceutical firm, ensuring timely resolution and accurate financial reporting</li>
+        <li>Achieved 100% compliance in financial reporting accuracy by cross-referencing vouchers and ledger accounts to meet auditing standards, leveraging Excel for data analysis</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ PROJECTS ═══════════════════════════════ -->
+<div class="tab-panel" id="panel-projects">
+  <div class="page">
+
+    <div class="section-label" style="margin-bottom:2rem;">Academic Projects</div>
+    <div class="projects-grid">
+
+      <!-- PROJECT 1 -->
+      <div class="project-card">
+        <div class="project-top">
+          <div class="project-tags">
+            <span class="tag tag-green">Market Risk</span>
+            <span class="tag tag-blue">Backtesting</span>
+            <span class="tag tag-amber">Python</span>
+            <span class="tag tag-gray">4,300 Trading Days</span>
+            <span class="tag tag-gray">$10M Portfolio</span>
+          </div>
+          <div class="project-title">Quantitative Risk Analytics — VaR Framework</div>
+          <p class="project-desc">End-to-end market risk analytics pipeline built in Python for a $10M multi-asset portfolio (10 assets). Implements seven distinct VaR methodologies, full backtesting suite, EWMA covariance modelling, component risk decomposition, and historical crisis stress testing.</p>
+          <ul class="project-bullets">
+            <li>Implemented 7 VaR methodologies: Historical Simulation, Bootstrap HS, EWMA-weighted, Volatility-weighted HS, Correlation-adjusted HS, Delta-Normal (Parametric), and Monte Carlo (50,000 paths via Cholesky decomposition)</li>
+            <li>MLE-estimated EWMA λ, covariance series via EWMA, Cholesky decomposition for multivariate normal MC simulation, and delta-normal component VaR per asset</li>
+            <li>Backtested across 4,300+ trading days with Kupiec POF test and Christoffersen independence test; validated exception clustering and model calibration</li>
+            <li>Stress tested across GFC 2008, COVID-19 crash, and rate-shock regimes — reporting ES at 97.5% for each crisis window</li>
+          </ul>
+        </div>
+
+        <div class="metrics-strip">
+          <div class="metric-item" data-tooltip="Historical Simulation at 95% confidence">
+            <div class="metric-val loss">~$142K</div>
+            <div class="metric-label">Historical VaR 95%</div>
+          </div>
+          <div class="metric-item" data-tooltip="50,000 path Monte Carlo with Cholesky decomposition">
+            <div class="metric-val loss">~$218K</div>
+            <div class="metric-label">MC VaR 95%</div>
+          </div>
+          <div class="metric-item" data-tooltip="Parametric / Delta-Normal approach">
+            <div class="metric-val loss">~$195K</div>
+            <div class="metric-label">Delta-Normal VaR</div>
+          </div>
+          <div class="metric-item" data-tooltip="Expected Shortfall — average loss beyond VaR threshold">
+            <div class="metric-val loss">~$267K</div>
+            <div class="metric-label">Expected Shortfall</div>
+          </div>
+        </div>
+
+        <div class="methods-section">
+          <div class="methods-title">// Implemented Methodologies</div>
+          <div class="methods-chips">
+            <span class="method-chip">Historical Simulation</span>
+            <span class="method-chip">Bootstrap HS</span>
+            <span class="method-chip">EWMA-weighted VaR</span>
+            <span class="method-chip">Volatility-weighted HS</span>
+            <span class="method-chip">Corr-adjusted HS</span>
+            <span class="method-chip">Delta-Normal</span>
+            <span class="method-chip">Monte Carlo (50k paths)</span>
+            <span class="method-chip">Kupiec POF Test</span>
+            <span class="method-chip">Christoffersen Test</span>
+            <span class="method-chip">Crisis Stress Testing</span>
+          </div>
+        </div>
+
+        <div class="project-footer">
+          <a href="https://github.com/danst03" target="_blank" class="project-link-btn primary">↗ View on GitHub</a>
+        </div>
+      </div>
+
+      <!-- PROJECT 2 -->
+      <div class="project-card">
+        <div class="project-top">
+          <div class="project-tags">
+            <span class="tag tag-green">Derivatives Pricing</span>
+            <span class="tag tag-red">Live App</span>
+            <span class="tag tag-amber">Python</span>
+            <span class="tag tag-gray">PDE / Black-Scholes</span>
+            <span class="tag tag-gray">Streamlit</span>
+          </div>
+          <div class="project-title">Quantitative Option Pricing Engine — OptionLab</div>
+          <p class="project-desc">Full-stack options analytics platform supporting European and American vanilla options. Combines analytic Black–Scholes with a finite-difference PDE solver (Crank-Nicolson θ-scheme) and is deployed as an interactive live application at optionlab.streamlit.app.</p>
+          <ul class="project-bullets">
+            <li>Black–Scholes closed-form pricing for European options; PSOR-based Linear Complementarity Problem (LCP) solver for American early-exercise with Rannacher smoothing to stabilise payoff discontinuities</li>
+            <li>Newton–bisection hybrid implied volatility solver; full Greeks computation (Δ, Γ, Θ, Vega, Rho) with interactive surface plots</li>
+            <li>Interactive visualisations: payoff vs. value analysis, Greeks curves, PDE heatmaps, early-exercise boundaries, and price surfaces via Plotly</li>
+            <li>Deployed on Streamlit Cloud — fully live and publicly accessible; built with NumPy, Pandas, SciPy, and Plotly</li>
+          </ul>
+        </div>
+
+        <div class="streamlit-wrapper">
+          <div class="streamlit-bar">
+            <div class="window-dots">
+              <div class="dot dot-r"></div>
+              <div class="dot dot-y"></div>
+              <div class="dot dot-g"></div>
+            </div>
+            <div class="streamlit-url-bar">optionlab.streamlit.app</div>
+            <a href="https://optionlab.streamlit.app/" target="_blank" class="streamlit-open">↗ Full Screen</a>
+          </div>
+          <iframe
+            class="streamlit-iframe"
+            src="https://optionlab.streamlit.app/?embedded=true"
+            title="OptionLab — Quantitative Option Pricing Engine"
+            loading="lazy">
+          </iframe>
+        </div>
+
+        <div class="project-footer">
+          <a href="https://optionlab.streamlit.app/" target="_blank" class="project-link-btn primary">↗ Launch App</a>
+          <a href="https://github.com/danst03" target="_blank" class="project-link-btn">GitHub Repo</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SKILLS ═══════════════════════════════ -->
+<div class="tab-panel" id="panel-skills">
+  <div class="page">
+
+    <div class="skills-header-grid">
+      <div class="skill-stat-card">
+        <div class="skill-stat-val">7+</div>
+        <div class="skill-stat-label">VaR Methodologies</div>
+      </div>
+      <div class="skill-stat-card">
+        <div class="skill-stat-val">4</div>
+        <div class="skill-stat-label">Languages</div>
+      </div>
+      <div class="skill-stat-card">
+        <div class="skill-stat-val">10+</div>
+        <div class="skill-stat-label">Python Libraries</div>
+      </div>
+      <div class="skill-stat-card">
+        <div class="skill-stat-val">20+</div>
+        <div class="skill-stat-label">Quant Methods</div>
+      </div>
+    </div>
+
+    <div class="skills-section">
+      <div class="section-label">Programming Languages</div>
+      <div class="skill-bars">
+        <div class="skill-bar-row"><span class="skill-bar-name">Python</span><div class="skill-bar-track"><div class="skill-bar-fill" style="width:92%"></div></div><span class="skill-pct">92%</span></div>
+        <div class="skill-bar-row"><span class="skill-bar-name">R Programming</span><div class="skill-bar-track"><div class="skill-bar-fill" style="width:75%"></div></div><span class="skill-pct">75%</span></div>
+        <div class="skill-bar-row"><span class="skill-bar-name">SQL</span><div class="skill-bar-track"><div class="skill-bar-fill" style="width:70%"></div></div><span class="skill-pct">70%</span></div>
+        <div class="skill-bar-row"><span class="skill-bar-name">C++</span><div class="skill-bar-track"><div class="skill-bar-fill" style="width:50%"></div></div><span class="skill-pct">50%</span></div>
+      </div>
+    </div>
+
+    <div class="skills-3col" style="margin-bottom: 3rem;">
+      <div class="skill-col-card">
+        <div class="skill-col-title">Python Libraries</div>
+        <div class="skill-col-items">
+          <div class="skill-col-item"><span class="skill-col-item-name">NumPy / Pandas</span><span class="skill-col-item-level adv">Advanced</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">SciPy / Statsmodels</span><span class="skill-col-item-level adv">Advanced</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Plotly / Streamlit</span><span class="skill-col-item-level adv">Advanced</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">scikit-learn</span><span class="skill-col-item-level adv">Advanced</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">TensorFlow / Keras</span><span class="skill-col-item-level">Proficient</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">PyTorch</span><span class="skill-col-item-level">Working</span></div>
+        </div>
+      </div>
+      <div class="skill-col-card">
+        <div class="skill-col-title">Finance Tools</div>
+        <div class="skill-col-items">
+          <div class="skill-col-item"><span class="skill-col-item-name">Bloomberg Terminal</span><span class="skill-col-item-level">Proficient</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">yfinance</span><span class="skill-col-item-level adv">Advanced</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Tally</span><span class="skill-col-item-level">Proficient</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Excel (Advanced)</span><span class="skill-col-item-level adv">Advanced</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">SPSS</span><span class="skill-col-item-level">Proficient</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Microsoft Office</span><span class="skill-col-item-level adv">Advanced</span></div>
+        </div>
+      </div>
+      <div class="skill-col-card">
+        <div class="skill-col-title">Coursework</div>
+        <div class="skill-col-items">
+          <div class="skill-col-item"><span class="skill-col-item-name">Financial Econometrics</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Derivatives & Risk Mgmt</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Stochastic Calculus</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Time Series Analysis</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Quant Portfolio Analysis</span></div>
+          <div class="skill-col-item"><span class="skill-col-item-name">Cloud Computing</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="skills-section">
+      <div class="section-label">Quantitative Methods — hover to highlight</div>
+      <div class="quant-tags-grid">
+        <span class="quant-tag">Value at Risk (VaR)</span>
+        <span class="quant-tag">Expected Shortfall (ES)</span>
+        <span class="quant-tag">Monte Carlo Simulation</span>
+        <span class="quant-tag">EWMA Volatility</span>
+        <span class="quant-tag">Cholesky Decomposition</span>
+        <span class="quant-tag">Black-Scholes PDE</span>
+        <span class="quant-tag">Crank-Nicolson FDM</span>
+        <span class="quant-tag">PSOR / LCP</span>
+        <span class="quant-tag">Greeks (Δ Γ Θ Vega Rho)</span>
+        <span class="quant-tag">Implied Volatility</span>
+        <span class="quant-tag">Kupiec POF Test</span>
+        <span class="quant-tag">Christoffersen Test</span>
+        <span class="quant-tag">ARMA / GARCH</span>
+        <span class="quant-tag">VAR Models</span>
+        <span class="quant-tag">Bootstrap Simulation</span>
+        <span class="quant-tag">Risk Decomposition</span>
+        <span class="quant-tag">Stress Testing</span>
+        <span class="quant-tag">Covariance Estimation</span>
+        <span class="quant-tag">Econometrics</span>
+        <span class="quant-tag">Machine Learning</span>
+        <span class="quant-tag">Deep Learning</span>
+        <span class="quant-tag">Game Theory</span>
+        <span class="quant-tag">Options & Futures</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ EDUCATION ═══════════════════════════════ -->
+<div class="tab-panel" id="panel-education">
+  <div class="page">
+    <div class="section-label" style="margin-bottom:2rem;">Academic Background</div>
+    <div class="education-grid">
+
+      <div class="edu-card">
+        <div class="edu-header">
+          <div>
+            <div class="edu-degree">MS, Quantitative Finance</div>
+            <div class="edu-school">Fordham University — Gabelli School of Business</div>
+            <div class="edu-location">New York, NY</div>
+          </div>
+          <div class="edu-date-badge">Sep 2025 – Dec 2026</div>
+        </div>
+        <div class="edu-courses-label">Relevant Coursework</div>
+        <div class="edu-course-chips">
+          <span class="edu-chip">Financial Econometrics</span>
+          <span class="edu-chip">Derivatives & Risk Management</span>
+          <span class="edu-chip">Stochastic Calculus</span>
+          <span class="edu-chip">Time Series Analysis</span>
+          <span class="edu-chip">Quantitative Portfolio Analysis</span>
+          <span class="edu-chip">R Programming</span>
+          <span class="edu-chip">C++</span>
+          <span class="edu-chip">Python</span>
+          <span class="edu-chip">Cloud Computing</span>
+          <span class="edu-chip">SQL</span>
+        </div>
+      </div>
+
+      <div class="edu-card">
+        <div class="edu-header">
+          <div>
+            <div class="edu-degree">BS, Economics — Minor in Finance</div>
+            <div class="edu-school">Narsee Monjee Institute of Management Studies</div>
+            <div class="edu-location">Mumbai, India</div>
+          </div>
+          <div class="edu-date-badge">Jan 2021 – Dec 2024</div>
+        </div>
+        <div class="edu-courses-label">Relevant Coursework</div>
+        <div class="edu-course-chips">
+          <span class="edu-chip">Econometrics</span>
+          <span class="edu-chip">Financial Derivatives</span>
+          <span class="edu-chip">Game Theory</span>
+          <span class="edu-chip">Statistics</span>
+          <span class="edu-chip">Mathematics</span>
+          <span class="edu-chip">R Programming</span>
+          <span class="edu-chip">Economic Modeling</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ CONTACT ═══════════════════════════════ -->
+<div class="tab-panel" id="panel-contact">
+  <div class="page">
+    <div class="contact-layout">
+      <div>
+        <h2 class="contact-intro-heading">Let's work together.</h2>
+        <p class="contact-intro-body">I'm currently pursuing my MS at Fordham and open to quant research, risk analytics, derivatives pricing, and software engineering roles. If you're building something interesting in financial mathematics or risk — I'd love to hear from you.</p>
+        <div class="contact-cards">
+          <a href="mailto:ds148@fordham.edu" class="contact-card">
+            <div class="contact-icon">@</div>
+            <div class="contact-info">
+              <div class="contact-type">Email</div>
+              <div class="contact-value">ds148@fordham.edu</div>
+            </div>
+            <div class="contact-arrow">↗</div>
+          </a>
+          <a href="tel:5516660824" class="contact-card">
+            <div class="contact-icon">#</div>
+            <div class="contact-info">
+              <div class="contact-type">Phone</div>
+              <div class="contact-value">551-666-0824</div>
+            </div>
+            <div class="contact-arrow">↗</div>
+          </a>
+          <a href="https://www.linkedin.com/in/daniel-stallone" target="_blank" class="contact-card">
+            <div class="contact-icon">in</div>
+            <div class="contact-info">
+              <div class="contact-type">LinkedIn</div>
+              <div class="contact-value">linkedin.com/in/daniel-stallone</div>
+            </div>
+            <div class="contact-arrow">↗</div>
+          </a>
+          <a href="https://github.com/danst03" target="_blank" class="contact-card">
+            <div class="contact-icon">gh</div>
+            <div class="contact-info">
+              <div class="contact-type">GitHub</div>
+              <div class="contact-value">github.com/danst03</div>
+            </div>
+            <div class="contact-arrow">↗</div>
+          </a>
+          <a href="https://optionlab.streamlit.app/" target="_blank" class="contact-card">
+            <div class="contact-icon">▶</div>
+            <div class="contact-info">
+              <div class="contact-type">Live App</div>
+              <div class="contact-value">optionlab.streamlit.app</div>
+            </div>
+            <div class="contact-arrow">↗</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="contact-form-card">
+        <div class="form-heading">Send a message</div>
+        <div class="form-subheading">I'll get back to you within 24 hours.</div>
+        <div id="contact-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">First name</label>
+              <input class="form-input" type="text" placeholder="Jane" id="fname">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last name</label>
+              <input class="form-input" type="text" placeholder="Smith" id="lname">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" type="email" placeholder="jane@firm.com" id="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <select class="form-select" id="subject">
+              <option value="">Select a topic…</option>
+              <option>Quant Research Role</option>
+              <option>Risk Analytics Opportunity</option>
+              <option>Derivatives / Pricing Project</option>
+              <option>Academic Collaboration</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-textarea" placeholder="Tell me about the opportunity or project…" id="message"></textarea>
+          </div>
+          <button class="form-submit" onclick="submitForm()">
+            Send Message
+            <span>→</span>
+          </button>
+        </div>
+        <div class="form-success" id="form-success">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">✓</div>
+          <div style="font-weight:500;color:var(--accent);margin-bottom:0.5rem;">Message received!</div>
+          <div style="color:var(--text3);font-size:13px;">I'll be in touch at ds148@fordham.edu shortly.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TAB SWITCHING ──
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + tabId).classList.add('active');
+  if (btn) btn.classList.add('active');
+
+  // Animate skill bars when skills tab opens
+  if (tabId === 'skills') {
+    setTimeout(() => {
+      document.querySelectorAll('.skill-bar-fill').forEach(bar => {
+        bar.style.width = bar.style.width;
+        bar.classList.add('animated');
+      });
+    }, 100);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── SKILL BARS on first load ──
+document.querySelectorAll('.skill-bar-fill').forEach(bar => {
+  const targetWidth = bar.style.width;
+  bar.style.width = targetWidth;
+  bar.style.transform = 'scaleX(0)';
+});
+
+// ── CONTACT FORM ──
+function submitForm() {
+  const email = document.getElementById('email').value;
+  const message = document.getElementById('message').value;
+  if (!email || !message) {
+    alert('Please fill in at least your email and message.');
+    return;
+  }
+  // Compose mailto
+  const fname = document.getElementById('fname').value;
+  const lname = document.getElementById('lname').value;
+  const subject = document.getElementById('subject').value || 'Portfolio Inquiry';
+  const body = `Name: ${fname} ${lname}\nEmail: ${email}\n\n${message}`;
+  window.open(`mailto:ds148@fordham.edu?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  document.getElementById('contact-form').style.display = 'none';
+  document.getElementById('form-success').style.display = 'block';
+}
+
+// Trigger skill bars when skills is the active tab
+window.addEventListener('DOMContentLoaded', () => {
+  // nothing on load since about is default
+});
+</script>
+
+</body>
+</html>
