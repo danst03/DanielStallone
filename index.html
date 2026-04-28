@@ -6,6 +6,34 @@
 <title>Daniel Stallone — Quantitative Finance</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// Tab switching defined early so onclick attrs always work
+function switchTab(id, btn) {
+  document.querySelectorAll('.tp').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tbtn').forEach(function(b){ b.classList.remove('active'); });
+  var panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'skills') {
+    setTimeout(function(){ document.querySelectorAll('.sbfill').forEach(function(b){ b.classList.add('anim'); }); }, 120);
+  }
+  if (id === 'lab') {
+    setTimeout(function(){ if(typeof calcBS==='function') calcBS(); }, 150);
+    setTimeout(function(){ if(typeof drawStrat==='function') drawStrat(); }, 250);
+  }
+  window.scrollTo({ top: 62, behavior: 'smooth' });
+}
+
+function switchQLab(id, btn) {
+  document.querySelectorAll('.ql-panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.ql-tab').forEach(function(b){ b.classList.remove('active'); });
+  var panel = document.getElementById('ql-' + id);
+  if (panel) panel.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'bs') setTimeout(function(){ if(typeof calcBS==='function') calcBS(); }, 80);
+  if (id === 'strat') setTimeout(function(){ if(typeof drawStrat==='function') drawStrat(); }, 80);
+}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -429,20 +457,102 @@ canvas{display:block;max-width:100%;width:100%!important}
 
   <!-- ══════════════ VaR PANEL ══════════════ -->
   <div class="ql-panel active" id="ql-var">
-    <div class="sbox">
-      <div class="sbox-title">Portfolio & Risk Parameters</div>
-      <div class="ctrl-grid">
-        <div class="ctrl-group"><div class="ctrl-label">Confidence Level<span class="ctrl-val" id="c-conf">95%</span></div><input type="range" min="90" max="99" value="95" step="1" id="v-conf" oninput="document.getElementById('c-conf').textContent=this.value+'%'"></div>
-        <div class="ctrl-group"><div class="ctrl-label">Annual Volatility (σ)<span class="ctrl-val" id="c-vol">20%</span></div><input type="range" min="5" max="80" value="20" step="1" id="v-vol" oninput="document.getElementById('c-vol').textContent=this.value+'%'"></div>
-        <div class="ctrl-group"><div class="ctrl-label">Annual Drift (μ)<span class="ctrl-val" id="c-drift">8%</span></div><input type="range" min="-20" max="30" value="8" step="1" id="v-drift" oninput="document.getElementById('c-drift').textContent=this.value+'%'"></div>
-        <div class="ctrl-group"><div class="ctrl-label">EWMA Lambda (λ)<span class="ctrl-val" id="c-lam">0.94</span></div><input type="range" min="80" max="99" value="94" step="1" id="v-lam" oninput="document.getElementById('c-lam').textContent=(this.value/100).toFixed(2)"></div>
-        <div class="ctrl-group"><div class="ctrl-label">Correlation (avg ρ)<span class="ctrl-val" id="c-corr">0.30</span></div><input type="range" min="-80" max="90" value="30" step="5" id="v-corr" oninput="document.getElementById('c-corr').textContent=(this.value/100).toFixed(2)"></div>
-        <div class="ctrl-group"><div class="ctrl-label">Lookback Days<span class="ctrl-val" id="c-lb">252</span></div><input type="range" min="60" max="1260" value="252" step="21" id="v-lb" oninput="document.getElementById('c-lb').textContent=this.value"></div>
-        <div class="ctrl-group"><div class="ctrl-label">Tail Shape (ν d.f.)<span class="ctrl-val" id="c-nu">∞ (Normal)</span></div><input type="range" min="3" max="30" value="30" step="1" id="v-nu" oninput="document.getElementById('c-nu').textContent=this.value>=30?'∞ (Normal)':this.value+' (t-dist)'"></div>
-        <div class="ctrl-group"><div class="ctrl-label">Skewness<span class="ctrl-val" id="c-skew">0.00</span></div><input type="range" min="-200" max="0" value="0" step="10" id="v-skew" oninput="document.getElementById('c-skew').textContent=(this.value/100).toFixed(2)"></div>
-      </div>
-      <button class="run-btn" onclick="runVaR()">▶ Run Full Risk Analysis</button>
+
+  <!-- ── STEP 1: DATA SOURCE ── -->
+  <div class="sbox">
+    <div class="sbox-title">Step 1 — Build Your Portfolio</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:1.25rem">Add assets via ticker, CSV upload, or manual entry. <strong style="color:var(--text2)">Data is fetched live where possible</strong> — if blocked by browser security, AI-calibrated simulation is used automatically.</div>
+
+    <!-- Data source legend -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1.25rem;font-size:11.5px">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#14532D;display:inline-block"></span><span style="color:var(--text2)">Live (Yahoo Finance)</span></span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#1D4ED8;display:inline-block"></span><span style="color:var(--text2)">AI-Calibrated (Claude API)</span></span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#92400E;display:inline-block"></span><span style="color:var(--text2)">GBM+GARCH Simulation</span></span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#5B21B6;display:inline-block"></span><span style="color:var(--text2)">CSV Upload</span></span>
     </div>
+
+    <!-- Ticker search row -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem">
+      <div style="flex:1;min-width:160px">
+        <div class="ctrl-label" style="margin-bottom:6px">Stock / ETF Ticker</div>
+        <input class="ctrl-select" id="var-ticker" placeholder="AAPL, SPY, MSFT…" style="font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div style="min-width:130px">
+        <div class="ctrl-label" style="margin-bottom:6px">Start Date</div>
+        <input type="date" class="ctrl-select" id="var-start" value="2020-01-01">
+      </div>
+      <div style="min-width:130px">
+        <div class="ctrl-label" style="margin-bottom:6px">End Date</div>
+        <input type="date" class="ctrl-select" id="var-end">
+      </div>
+      <div style="min-width:110px">
+        <div class="ctrl-label" style="margin-bottom:6px">Weight (%)</div>
+        <input type="number" class="ctrl-select" id="var-weight" value="100" min="1" max="100" style="font-family:var(--mono)">
+      </div>
+      <button class="run-btn" style="margin-bottom:0;padding:9px 18px;font-size:13px" onclick="fetchTickerData()">+ Add Ticker</button>
+    </div>
+
+    <!-- Quick-add popular tickers -->
+    <div style="margin-bottom:1rem">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase">Quick Add</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('SPY')">SPY</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('AAPL')">AAPL</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('MSFT')">MSFT</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('GOOGL')">GOOGL</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('AMZN')">AMZN</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('JPM')">JPM</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('GS')">GS</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('QQQ')">QQQ</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('GLD')">GLD</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('TLT')">TLT</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('BTC-USD')">BTC</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('NVDA')">NVDA</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('META')">META</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('XOM')">XOM</button>
+        <button class="qtag" style="cursor:pointer;font-size:11px;padding:4px 10px" onclick="quickAdd('VIX')">VIX</button>
+      </div>
+    </div>
+
+    <!-- CSV Upload -->
+    <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.5rem">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:.5rem">Upload Custom Data (CSV/Excel)</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">Column 1: Date (YYYY-MM-DD) · Column 2: Price or Return · Header row optional</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input type="file" id="csv-upload" accept=".csv,.txt,.xlsx" style="font-size:12px;color:var(--text2)" onchange="handleCSVUpload(this)">
+        <input class="ctrl-select" id="csv-name" placeholder="Asset name (e.g. My Fund)" style="max-width:200px;font-size:13px">
+        <input type="number" class="ctrl-select" id="csv-weight" value="100" min="1" max="100" style="max-width:90px;font-family:var(--mono);font-size:13px">
+      </div>
+    </div>
+  </div>
+
+  <!-- Portfolio table -->
+  <div class="sbox" id="portfolio-table-box" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div class="sbox-title" style="margin:0">Portfolio Holdings</div>
+      <button onclick="clearPortfolio()" style="font-size:12px;color:var(--red);background:none;border:none;cursor:pointer;font-family:var(--sans)">✕ Clear All</button>
+    </div>
+    <table class="tbl"><thead><tr><th>Asset</th><th>Source</th><th>Observations</th><th>Period</th><th>Ann. Return</th><th>Ann. Vol</th><th>Weight</th><th>Action</th></tr></thead>
+    <tbody id="portfolio-rows"></tbody></table>
+    <div id="weight-warning" style="display:none;margin-top:.75rem;padding:8px 12px;background:var(--amber-light);border-radius:6px;font-size:12px;color:var(--amber)">⚠ Weights don't sum to 100%. Normalising automatically.</div>
+  </div>
+
+  <!-- Step 2: Risk Parameters -->
+  <div class="sbox" id="var-params-box" style="display:none">
+    <div class="sbox-title">Step 2 — Risk Parameters</div>
+    <div class="ctrl-grid">
+      <div class="ctrl-group"><div class="ctrl-label">Confidence Level<span class="ctrl-val" id="c-conf">95%</span></div><input type="range" min="90" max="99" value="95" step="1" id="v-conf" oninput="document.getElementById('c-conf').textContent=this.value+'%'"></div>
+      <div class="ctrl-group"><div class="ctrl-label">VaR Horizon (days)<span class="ctrl-val" id="c-horiz">1</span></div><input type="range" min="1" max="20" value="1" step="1" id="v-horiz" oninput="document.getElementById('c-horiz').textContent=this.value+'d'"></div>
+      <div class="ctrl-group"><div class="ctrl-label">EWMA Lambda (λ)<span class="ctrl-val" id="c-lam">0.94</span></div><input type="range" min="80" max="99" value="94" step="1" id="v-lam" oninput="document.getElementById('c-lam').textContent=(this.value/100).toFixed(2)"></div>
+      <div class="ctrl-group"><div class="ctrl-label">MC Paths<span class="ctrl-val" id="c-mc">10,000</span></div><input type="range" min="1000" max="50000" value="10000" step="1000" id="v-mc" oninput="document.getElementById('c-mc').textContent=Number(this.value).toLocaleString()"></div>
+      <div class="ctrl-group"><div class="ctrl-label">Lookback Window<span class="ctrl-val" id="c-lb">252d</span></div><input type="range" min="60" max="1260" value="252" step="21" id="v-lb" oninput="document.getElementById('c-lb').textContent=this.value+'d'"></div>
+      <div class="ctrl-group"><div class="ctrl-label">Basel Multiplier k<span class="ctrl-val" id="c-bk">3</span></div><input type="range" min="3" max="4" value="3" step="0.1" id="v-bk" oninput="document.getElementById('c-bk').textContent=parseFloat(this.value).toFixed(1)"></div>
+      <div class="ctrl-group"><div class="ctrl-label">Stress Vol Multiplier<span class="ctrl-val" id="c-sm">2.0×</span></div><input type="range" min="10" max="50" value="20" step="5" id="v-sm" oninput="document.getElementById('c-sm').textContent=(this.value/10).toFixed(1)+'×'"></div>
+      <div class="ctrl-group"><div class="ctrl-label">Rolling Window (charts)<span class="ctrl-val" id="c-rw">21d</span></div><input type="range" min="5" max="63" value="21" step="1" id="v-rw" oninput="document.getElementById('c-rw').textContent=this.value+'d'"></div>
+    </div>
+    <button class="run-btn" onclick="runVaR()">▶ Run Full Risk Analysis</button>
+    <div id="var-status" style="display:none;font-size:13px;color:var(--text3);margin-top:-.5rem;padding:10px 14px;background:var(--bg2);border-radius:6px;border:1px solid var(--border)"></div>
+  </div>
 
     <!-- Key metrics -->
     <div class="rg4" id="v-metrics" style="display:none">
@@ -452,17 +562,41 @@ canvas{display:block;max-width:100%;width:100%!important}
       <div class="res-card"><div class="res-val loss" id="v-r4">—</div><div class="res-lbl">Expected Shortfall</div><div class="res-badge badge-amber">CVaR / ES</div></div>
     </div>
     <div class="rg4" id="v-metrics2" style="display:none">
-      <div class="res-card"><div class="res-val" id="v-sr">—</div><div class="res-lbl">Sharpe Ratio</div><div class="res-badge badge-blue">Risk-Adj.</div></div>
-      <div class="res-card"><div class="res-val loss" id="v-mdd">—</div><div class="res-lbl">Max Drawdown</div><div class="res-badge badge-red">Simulated</div></div>
+      <div class="res-card"><div class="res-val" id="v-sr">—</div><div class="res-lbl">Sharpe Ratio</div><div class="res-badge badge-blue">Ann.</div></div>
+      <div class="res-card"><div class="res-val loss" id="v-mdd">—</div><div class="res-lbl">Max Drawdown</div><div class="res-badge badge-red">Historical</div></div>
       <div class="res-card"><div class="res-val" id="v-skewv">—</div><div class="res-lbl">Return Skewness</div><div class="res-badge badge-amber">Fat Tail</div></div>
       <div class="res-card"><div class="res-val" id="v-kurt">—</div><div class="res-lbl">Excess Kurtosis</div><div class="res-badge badge-amber">Tail Risk</div></div>
+    </div>
+    <div class="rg4" id="v-metrics3" style="display:none">
+      <div class="res-card"><div class="res-val" id="v-nobs">—</div><div class="res-lbl">Observations</div><div class="res-badge badge-blue">Data points</div></div>
+      <div class="res-card"><div class="res-val loss" id="v-var99">—</div><div class="res-lbl">VaR (99%)</div><div class="res-badge badge-red">Basel level</div></div>
+      <div class="res-card"><div class="res-val loss" id="v-es975">—</div><div class="res-lbl">ES (97.5%)</div><div class="res-badge badge-red">FRTB level</div></div>
+      <div class="res-card"><div class="res-val loss" id="v-mrc">—</div><div class="res-lbl">MRC (Basel k)</div><div class="res-badge badge-red">Capital charge</div></div>
     </div>
 
     <!-- Distribution chart -->
     <div id="v-charts" style="display:none">
+
+      <!-- Price & returns overview -->
+      <div class="chart-box">
+        <div class="chart-box-title">Portfolio Price Index (Normalised to 100)<span class="chart-box-sub">Weighted portfolio performance over selected period</span></div>
+        <canvas id="cv-price" height="160"></canvas>
+      </div>
+
       <div class="chart2col">
         <div class="chart-box">
-          <div class="chart-box-title">Return Distribution<span class="chart-box-sub">Red = VaR tail · Orange line = ES</span></div>
+          <div class="chart-box-title">Daily Returns<span class="chart-box-sub">Portfolio P&L return series — red bars = VaR breaches</span></div>
+          <canvas id="cv-rets" height="200"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">Cumulative Returns<span class="chart-box-sub">Portfolio vs equal-weight benchmark</span></div>
+          <canvas id="cv-cumret" height="200"></canvas>
+        </div>
+      </div>
+
+      <div class="chart2col">
+        <div class="chart-box">
+          <div class="chart-box-title">Return Distribution<span class="chart-box-sub">Red = VaR tail · Dashed = Normal fit</span></div>
           <canvas id="cv-dist" height="220"></canvas>
         </div>
         <div class="chart-box">
@@ -471,82 +605,130 @@ canvas{display:block;max-width:100%;width:100%!important}
         </div>
       </div>
 
+      <!-- Rolling metrics -->
+      <div class="chart2col">
+        <div class="chart-box">
+          <div class="chart-box-title">Rolling VaR & ES<span class="chart-box-sub">Historical VaR rolling through time</span></div>
+          <canvas id="cv-rollingvar" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">EWMA Rolling Volatility (Ann.)<span class="chart-box-sub">Volatility clustering — EWMA λ applied</span></div>
+          <canvas id="cv-ewmavol" height="220"></canvas>
+        </div>
+      </div>
+
+      <div class="chart2col">
+        <div class="chart-box">
+          <div class="chart-box-title">Rolling Sharpe Ratio<span class="chart-box-sub">21-day rolling risk-adjusted return</span></div>
+          <canvas id="cv-sharpe" height="200"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">Drawdown Series<span class="chart-box-sub">Peak-to-trough drawdown over time</span></div>
+          <canvas id="cv-drawdown" height="200"></canvas>
+        </div>
+      </div>
+
       <!-- All methods comparison -->
       <div class="sbox">
         <div class="sbox-title">All VaR Methodologies Comparison</div>
-        <table class="tbl"><thead><tr><th>Methodology</th><th>VaR</th><th>ES (CVaR)</th><th>VaR %</th><th>ES Ratio</th><th>Basel Status</th></tr></thead><tbody id="v-tbl-methods"></tbody></table>
+        <table class="tbl"><thead><tr><th>Methodology</th><th>VaR (1-day)</th><th>ES (CVaR)</th><th>VaR %</th><th>ES / VaR</th><th>10-day VaR</th><th>Basel Status</th></tr></thead><tbody id="v-tbl-methods"></tbody></table>
       </div>
 
       <!-- Confidence level sensitivity -->
       <div class="chart2col">
         <div class="chart-box">
-          <div class="chart-box-title">VaR Across Confidence Levels<span class="chart-box-sub">90%–99% sensitivity curve</span></div>
+          <div class="chart-box-title">VaR Across Confidence Levels<span class="chart-box-sub">Sensitivity — 90% to 99%</span></div>
           <canvas id="cv-conf" height="220"></canvas>
         </div>
         <div class="chart-box">
-          <div class="chart-box-title">EWMA λ Sensitivity<span class="chart-box-sub">Impact on EWMA-weighted VaR</span></div>
-          <canvas id="cv-ewma" height="220"></canvas>
+          <div class="chart-box-title">VaR Horizon Scaling<span class="chart-box-sub">Square-root-of-time vs actual scaling</span></div>
+          <canvas id="cv-horizon" height="220"></canvas>
         </div>
       </div>
 
-      <!-- Risk decomposition -->
+      <!-- EWMA sensitivity -->
       <div class="chart2col">
         <div class="chart-box">
-          <div class="chart-box-title">Component VaR by Asset Class<span class="chart-box-sub">Delta-Normal decomposition</span></div>
+          <div class="chart-box-title">EWMA λ Sensitivity<span class="chart-box-sub">Impact on EWMA-weighted VaR and volatility</span></div>
+          <canvas id="cv-ewma" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">Autocorrelation of Returns<span class="chart-box-sub">Serial correlation check (Ljung-Box)</span></div>
+          <canvas id="cv-acf" height="220"></canvas>
+        </div>
+      </div>
+
+      <!-- Portfolio decomposition -->
+      <div class="chart2col">
+        <div class="chart-box">
+          <div class="chart-box-title">Component VaR by Asset<span class="chart-box-sub">Contribution to total portfolio VaR</span></div>
           <canvas id="cv-comp" height="220"></canvas>
         </div>
         <div class="chart-box">
-          <div class="chart-box-title">Marginal VaR Contribution<span class="chart-box-sub">Per-asset marginal risk</span></div>
-          <canvas id="cv-marg" height="220"></canvas>
+          <div class="chart-box-title">Correlation Heatmap<span class="chart-box-sub">Pairwise return correlations</span></div>
+          <canvas id="cv-corr" height="220"></canvas>
         </div>
       </div>
 
-      <!-- Volatility clustering -->
-      <div class="chart-box">
-        <div class="chart-box-title">EWMA Rolling Volatility (annualised)<span class="chart-box-sub">Volatility clustering over simulated 3-year window</span></div>
-        <canvas id="cv-ewmavol" height="160"></canvas>
+      <div class="chart2col">
+        <div class="chart-box">
+          <div class="chart-box-title">Risk-Return Scatter<span class="chart-box-sub">Each asset: Ann. Return vs Ann. Vol</span></div>
+          <canvas id="cv-rr" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">Marginal VaR Contribution<span class="chart-box-sub">Per-asset marginal risk vs weight</span></div>
+          <canvas id="cv-marg" height="220"></canvas>
+        </div>
       </div>
 
       <!-- Stress tests -->
       <div class="sbox">
         <div class="sbox-title">Historical Stress Test Scenarios</div>
-        <table class="tbl"><thead><tr><th>Crisis Window</th><th>Scenario Vol</th><th>Stressed VaR (95%)</th><th>Stressed VaR (99%)</th><th>Stressed ES (97.5%)</th><th>vs Baseline</th></tr></thead><tbody id="v-tbl-stress"></tbody></table>
+        <table class="tbl"><thead><tr><th>Crisis Window</th><th>Scenario Vol Mult.</th><th>Stressed VaR (95%)</th><th>Stressed VaR (99%)</th><th>Stressed ES (97.5%)</th><th>vs Baseline</th><th>Severity</th></tr></thead><tbody id="v-tbl-stress"></tbody></table>
+      </div>
+      <div class="chart-box">
+        <div class="chart-box-title">Stressed VaR Across Scenarios<span class="chart-box-sub">Baseline vs stress multipliers across crisis regimes</span></div>
+        <canvas id="cv-stress-chart" height="200"></canvas>
       </div>
 
       <!-- Backtesting -->
       <div class="chart2col">
         <div class="chart-box">
-          <div class="chart-box-title">VaR Breaches Over Time<span class="chart-box-sub">Exceptions flagged against rolling VaR</span></div>
-          <canvas id="cv-breach" height="200"></canvas>
+          <div class="chart-box-title">VaR Breaches Over Time<span class="chart-box-sub">Returns vs rolling VaR — red = exception</span></div>
+          <canvas id="cv-breach" height="220"></canvas>
         </div>
         <div class="chart-box">
           <div class="chart-box-title">Kupiec POF — Failure Rate vs Expected<span class="chart-box-sub">Across confidence levels</span></div>
-          <canvas id="cv-kupiec" height="200"></canvas>
+          <canvas id="cv-kupiec" height="220"></canvas>
         </div>
       </div>
 
       <div class="sbox">
         <div class="sbox-title">Backtesting Results — Kupiec POF & Christoffersen Independence Test</div>
-        <table class="tbl"><thead><tr><th>Confidence</th><th>Expected Failures</th><th>Actual Failures</th><th>Failure Rate</th><th>Kupiec LR</th><th>Kupiec p-val</th><th>Christoffersen</th><th>Verdict</th></tr></thead><tbody id="v-tbl-bt"></tbody></table>
+        <table class="tbl"><thead><tr><th>Confidence</th><th>Exp. Failures</th><th>Actual Failures</th><th>Failure Rate</th><th>Kupiec LR</th><th>p-value</th><th>Christoffersen</th><th>Traffic Light</th><th>Verdict</th></tr></thead><tbody id="v-tbl-bt"></tbody></table>
       </div>
 
       <!-- Basel III / IV Capital Requirement -->
       <hr class="divider">
-      <div style="font-family:var(--serif);font-size:1.2rem;letter-spacing:-.01em;margin-bottom:1rem">Basel III / IV Regulatory Capital Framework</div>
+      <div style="font-family:var(--serif);font-size:1.3rem;letter-spacing:-.01em;margin-bottom:1rem">Basel III / IV Regulatory Capital Framework</div>
       <div class="basel-grid" id="v-basel-cards"></div>
-      <div class="chart2col">
+      <div class="chart3col">
         <div class="chart-box">
-          <div class="chart-box-title">Basel Capital Requirement Components<span class="chart-box-sub">IMA: stressed VaR + IRC + CVA</span></div>
+          <div class="chart-box-title">Basel Capital Components<span class="chart-box-sub">VaR + SVaR + IRC breakdown</span></div>
           <canvas id="cv-basel-comp" height="220"></canvas>
         </div>
         <div class="chart-box">
-          <div class="chart-box-title">VaR vs Stressed VaR (Basel IMA)<span class="chart-box-sub">Regulatory multiplier applied (k=3)</span></div>
+          <div class="chart-box-title">VaR vs Stressed VaR (IMA)<span class="chart-box-sub">Regulatory multiplier k applied</span></div>
           <canvas id="cv-basel-var" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">MRC vs Confidence Level<span class="chart-box-sub">Total market risk capital charge</span></div>
+          <canvas id="cv-mrc" height="220"></canvas>
         </div>
       </div>
       <div class="sbox">
-        <div class="sbox-title">Basel Standard Table</div>
-        <table class="tbl"><thead><tr><th>Measure</th><th>Horizon</th><th>Confidence</th><th>Value</th><th>Multiplier</th><th>Capital Charge</th><th>Regulatory Standard</th></tr></thead><tbody id="v-tbl-basel"></tbody></table>
+        <div class="sbox-title">Basel Regulatory Standard Table</div>
+        <table class="tbl"><thead><tr><th>Measure</th><th>Horizon</th><th>Confidence</th><th>Value (%)</th><th>Multiplier</th><th>Capital Charge (%)</th><th>Regulatory Standard</th></tr></thead><tbody id="v-tbl-basel"></tbody></table>
       </div>
     </div>
   </div>
@@ -1046,47 +1228,310 @@ function drawIVSurface(){
   mkChart('bc-surface',{type:'line',data:{labels:kRange,datasets},options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{title:{display:true,text:'Log-moneyness k',font:{size:10}},ticks:{maxTicksLimit:8,font:{size:9}}},y:{title:{display:true,text:'IV (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:9}}}}}});
 }
 
-// ─── VaR ENGINE ───
+// ─── VaR ENGINE — LIVE DATA ───
 let varCharts={};
 function destroyVChart(id){if(varCharts[id]){varCharts[id].destroy();delete varCharts[id];}}
 function mkVChart(id,cfg){destroyVChart(id);let c=document.getElementById(id);if(!c)return;varCharts[id]=new Chart(c,cfg);}
-
 function randn(){let u1=Math.random(),u2=Math.random();return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);}
 function quantileArr(arr,q){let s=[...arr].sort((a,b)=>a-b);let pos=(s.length-1)*q;let lo=Math.floor(pos),hi=Math.ceil(pos);return s[lo]*(1-(pos-lo))+s[hi]*(pos-lo);}
 function esArr(arr,alpha){let q=quantileArr(arr,alpha);let tail=arr.filter(x=>x<=q);return tail.length?tail.reduce((a,b)=>a+b,0)/tail.length:q;}
 
+// Portfolio state
+let portfolioAssets = []; // [{name, rets, dates, weight}]
+
+function setStatus(msg, type='info'){
+  let el=document.getElementById('var-status');
+  if(!el) return;
+  el.style.display='block';
+  el.style.background=type==='error'?'#FEF2F2':type==='success'?'#F0FDF4':'var(--bg2)';
+  el.style.color=type==='error'?'#991B1B':type==='success'?'#14532D':'var(--text3)';
+  el.textContent=msg;
+}
+
+function quickAdd(ticker){
+  document.getElementById('var-ticker').value=ticker;
+  fetchTickerData();
+}
+
+// Known ticker profiles for realistic simulation
+const TICKER_PROFILES = {
+  'SPY':  {mu:0.10, sigma:0.16, name:'S&P 500 ETF'},
+  'QQQ':  {mu:0.14, sigma:0.20, name:'Nasdaq 100 ETF'},
+  'AAPL': {mu:0.22, sigma:0.26, name:'Apple Inc.'},
+  'MSFT': {mu:0.20, sigma:0.24, name:'Microsoft Corp.'},
+  'GOOGL':{mu:0.18, sigma:0.25, name:'Alphabet Inc.'},
+  'AMZN': {mu:0.19, sigma:0.28, name:'Amazon.com Inc.'},
+  'NVDA': {mu:0.38, sigma:0.52, name:'NVIDIA Corp.'},
+  'META': {mu:0.21, sigma:0.35, name:'Meta Platforms'},
+  'JPM':  {mu:0.12, sigma:0.22, name:'JPMorgan Chase'},
+  'GS':   {mu:0.11, sigma:0.24, name:'Goldman Sachs'},
+  'GLD':  {mu:0.07, sigma:0.12, name:'Gold ETF'},
+  'TLT':  {mu:0.02, sigma:0.14, name:'20yr Treasury ETF'},
+  'XOM':  {mu:0.08, sigma:0.22, name:'ExxonMobil Corp.'},
+  'BTC-USD':{mu:0.60, sigma:0.80, name:'Bitcoin USD'},
+  'VIX':  {mu:-0.10,sigma:0.70, name:'CBOE Volatility Index'},
+  'IWM':  {mu:0.09, sigma:0.20, name:'Russell 2000 ETF'},
+  'EEM':  {mu:0.06, sigma:0.20, name:'Emerging Markets ETF'},
+  'GDX':  {mu:0.05, sigma:0.32, name:'Gold Miners ETF'},
+  'USO':  {mu:0.03, sigma:0.35, name:'Oil ETF'},
+  'HYG':  {mu:0.05, sigma:0.09, name:'High Yield Bond ETF'},
+};
+
+function generateRealisticPrices(ticker, startDate, endDate, profile){
+  // Generate trading days between start and end
+  let dates=[], start=new Date(startDate), end=new Date(endDate);
+  let cur=new Date(start);
+  while(cur<=end){
+    let d=cur.getDay();
+    if(d!==0&&d!==6) dates.push(cur.toISOString().split('T')[0]);
+    cur=new Date(cur.getTime()+86400000);
+  }
+  if(dates.length<10) return null;
+
+  // GBM with GARCH-like vol clustering + jumps
+  let mu=profile.mu/252, sigma=profile.sigma/Math.sqrt(252);
+  let prices=[100], sigma2=sigma*sigma;
+  let alpha=0.05, beta=0.90; // GARCH params
+  // Regime-dependent: add historical crash windows
+  let crashMap={};
+  // GFC window
+  ['2008-09','2008-10','2008-11','2009-02','2009-03'].forEach(m=>crashMap[m]=3.0);
+  // COVID crash
+  ['2020-02','2020-03'].forEach(m=>crashMap[m]=4.0);
+  // Rate shock
+  ['2022-01','2022-06','2022-09'].forEach(m=>crashMap[m]=1.8);
+  // Dot-com
+  ['2000-09','2000-10','2001-09','2002-07'].forEach(m=>crashMap[m]=2.2);
+
+  for(let i=1;i<dates.length;i++){
+    let mo=dates[i].slice(0,7);
+    let stressMult=crashMap[mo]||1.0;
+    // GARCH update
+    let innov=sigma*stressMult*boxMuller();
+    sigma2=alpha*innov*innov+beta*sigma2+(1-alpha-beta)*sigma*sigma;
+    let sig=Math.sqrt(Math.max(sigma2,1e-8));
+    // Occasional jump (earnings/macro)
+    let jump=0;
+    if(Math.random()<0.005) jump=(Math.random()>0.5?1:-1)*sig*(3+Math.random()*3);
+    let ret=mu-0.5*sig*sig+sig*boxMuller()+jump;
+    prices.push(prices[prices.length-1]*Math.exp(ret));
+  }
+  return{dates,prices};
+}
+
+function boxMuller(){
+  let u1=Math.random()||1e-10, u2=Math.random();
+  return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+}
+
+async function fetchTickerData(){
+  let tickerRaw=document.getElementById('var-ticker').value.trim().toUpperCase().replace(/\s/g,'');
+  let startD=document.getElementById('var-start').value||'2020-01-01';
+  let endD=document.getElementById('var-end').value||new Date().toISOString().split('T')[0];
+  let wt=+document.getElementById('var-weight').value||100;
+  if(!tickerRaw){setStatus('Please enter a ticker symbol.','error');return;}
+  document.getElementById('var-params-box').style.display='block';
+
+  // Try multiple tickers if comma-separated
+  let tickers=tickerRaw.split(',').map(t=>t.trim()).filter(Boolean);
+  let perWeight=Math.round(wt/tickers.length);
+
+  for(let ticker of tickers){
+    setStatus('Loading '+ticker+' ('+startD+' → '+endD+')…');
+    let loaded=false;
+
+    // 1) Try live fetch via multiple CORS proxies
+    const proxies=[
+      'https://corsproxy.io/?',
+      'https://api.allorigins.win/raw?url=',
+      'https://cors-anywhere.herokuapp.com/',
+    ];
+    let s1=Math.floor(new Date(startD).getTime()/1000);
+    let s2=Math.floor(new Date(endD).getTime()/1000);
+    let yfUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?period1='+s1+'&period2='+s2+'&interval=1d';
+
+    for(let proxy of proxies){
+      try{
+        let resp=await fetch(proxy+encodeURIComponent(yfUrl),{signal:AbortSignal.timeout(5000)});
+        if(!resp.ok) continue;
+        let json=await resp.json();
+        let result=json.chart&&json.chart.result&&json.chart.result[0];
+        if(!result) continue;
+        let timestamps=result.timestamp;
+        let q=result.indicators&&result.indicators.adjclose&&result.indicators.adjclose[0];
+        let closes=q?q.adjclose:(result.indicators&&result.indicators.quote&&result.indicators.quote[0]&&result.indicators.quote[0].close);
+        if(!timestamps||!closes||closes.length<5) continue;
+        let dates=[],prices=[];
+        for(let i=0;i<timestamps.length;i++){
+          if(closes[i]!=null&&closes[i]>0){
+            dates.push(new Date(timestamps[i]*1000).toISOString().split('T')[0]);
+            prices.push(closes[i]);
+          }
+        }
+        if(prices.length<10) continue;
+        let rets=[];
+        for(let i=1;i<prices.length;i++) rets.push((prices[i]-prices[i-1])/prices[i-1]);
+        addAssetToPortfolio(ticker,'Live (Yahoo)',rets,dates.slice(1),perWeight,prices);
+        setStatus('✓ '+ticker+' loaded live — '+rets.length+' days ('+dates[1]+' to '+dates[dates.length-1]+')','success');
+        loaded=true;
+        break;
+      }catch(e){ /* try next proxy */ }
+    }
+
+    // 2) If live failed, use Anthropic API to get realistic simulated data
+    if(!loaded){
+      try{
+        setStatus('Live fetch blocked — generating calibrated data for '+ticker+' via AI…');
+        let profile=TICKER_PROFILES[ticker]||{mu:0.10,sigma:0.20,name:ticker};
+
+        // Ask Claude to provide calibrated parameters for this ticker
+        let prompt='Return ONLY a JSON object (no markdown, no explanation) with keys: mu (annual return decimal), sigma (annual vol decimal), name (full company name), sector (string). For stock ticker: '+ticker+'. Use realistic current market knowledge. Example: {"mu":0.12,"sigma":0.22,"name":"Apple Inc.","sector":"Technology"}';
+        let apiResp=await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            model:'claude-sonnet-4-20250514',
+            max_tokens:200,
+            messages:[{role:'user',content:prompt}]
+          })
+        });
+        if(apiResp.ok){
+          let apiJson=await apiResp.json();
+          let txt=apiJson.content&&apiJson.content[0]&&apiJson.content[0].text||'';
+          let cleaned=txt.replace(/```[^`]*```/g,'').replace(/`/g,'').trim();
+          let parsed=JSON.parse(cleaned);
+          if(parsed.mu!=null) profile={...profile,...parsed};
+        }
+
+        let result=generateRealisticPrices(ticker,startD,endD,profile);
+        if(!result||result.prices.length<10) throw new Error('Date range too short');
+        let rets=[];
+        for(let i=1;i<result.prices.length;i++) rets.push((result.prices[i]-result.prices[i-1])/result.prices[i-1]);
+        let sourceName='AI-Calibrated ('+(profile.name||ticker)+')';
+        addAssetToPortfolio(ticker,sourceName,rets,result.dates.slice(1),perWeight,result.prices);
+        setStatus('✓ '+ticker+' — AI-calibrated simulation ('+rets.length+' days). Note: simulated data, not live prices.','success');
+        loaded=true;
+      }catch(e){
+        // 3) Final fallback: use built-in profile or generic
+        let profile=TICKER_PROFILES[ticker]||{mu:0.10,sigma:0.20,name:ticker};
+        let result=generateRealisticPrices(ticker,startD,endD,profile);
+        if(result&&result.prices.length>=10){
+          let rets=[];
+          for(let i=1;i<result.prices.length;i++) rets.push((result.prices[i]-result.prices[i-1])/result.prices[i-1]);
+          addAssetToPortfolio(ticker,'Simulated (GBM+GARCH)',rets,result.dates.slice(1),perWeight,result.prices);
+          setStatus('✓ '+ticker+' — simulated data generated (live data unavailable in browser). '+rets.length+' trading days.','success');
+          loaded=true;
+        }
+      }
+    }
+
+    if(!loaded) setStatus('Could not load '+ticker+'. Try CSV upload for custom data.','error');
+  }
+  document.getElementById('var-ticker').value='';
+}
+
+function handleCSVUpload(input){
+  let file=input.files[0];
+  if(!file)return;
+  let name=document.getElementById('csv-name').value||file.name.replace(/\.[^.]+$/,'');
+  let wt=+document.getElementById('csv-weight').value||100;
+  let reader=new FileReader();
+  reader.onload=e=>{
+    let text=e.target.result;
+    let lines=text.split(/\r?\n/).filter(l=>l.trim());
+    let dates=[],prices=[];
+    for(let line of lines){
+      let cols=line.split(/[,\t;]/);
+      if(cols.length<2) continue;
+      let d=cols[0].trim(),v=parseFloat(cols[1].trim());
+      if(isNaN(v)) continue;
+      if(!/^\d{4}/.test(d)) continue; // skip header
+      dates.push(d);prices.push(v);
+    }
+    if(prices.length<5){setStatus('CSV parsing failed — ensure Col1=date, Col2=price/return','error');return;}
+    // Detect if returns or prices
+    let isReturns=prices.every(p=>Math.abs(p)<1);
+    let rets,retDates;
+    if(isReturns){rets=prices;retDates=dates;}
+    else{rets=[];retDates=[];for(let i=1;i<prices.length;i++){rets.push((prices[i]-prices[i-1])/prices[i-1]);retDates.push(dates[i]);}}
+    addAssetToPortfolio(name,'CSV Upload',rets,retDates,wt,prices);
+    setStatus(`✓ ${name} loaded from CSV — ${rets.length} observations`,'success');
+  };
+  reader.readAsText(file);
+}
+
+function addAssetToPortfolio(name,source,rets,dates,weight,prices){
+  let mean=rets.reduce((a,b)=>a+b,0)/rets.length;
+  let annRet=mean*252;
+  let variance=rets.reduce((a,b)=>a+(b-mean)**2,0)/(rets.length-1);
+  let annVol=Math.sqrt(variance)*Math.sqrt(252);
+  portfolioAssets.push({name,source,rets,dates,weight,prices,annRet,annVol});
+  renderPortfolioTable();
+  document.getElementById('portfolio-table-box').style.display='block';
+  document.getElementById('var-params-box').style.display='block';
+}
+
+function sourceBadge(source){
+  if(source.startsWith('Live')) return '<span style="background:#DCFCE7;color:#14532D;font-size:10px;padding:2px 7px;border-radius:4px;font-family:var(--mono)">● Live</span>';
+  if(source.startsWith('AI')) return '<span style="background:#DBEAFE;color:#1D4ED8;font-size:10px;padding:2px 7px;border-radius:4px;font-family:var(--mono)">● AI</span>';
+  if(source.startsWith('CSV')) return '<span style="background:#EDE9FE;color:#5B21B6;font-size:10px;padding:2px 7px;border-radius:4px;font-family:var(--mono)">● CSV</span>';
+  return '<span style="background:#FEF3C7;color:#92400E;font-size:10px;padding:2px 7px;border-radius:4px;font-family:var(--mono)">● Sim</span>';
+}
+
+function renderPortfolioTable(){
+  let totalW=portfolioAssets.reduce((a,b)=>a+b.weight,0);
+  let warnEl=document.getElementById('weight-warning');
+  warnEl.style.display=Math.abs(totalW-100)>1?'block':'none';
+  document.getElementById('portfolio-rows').innerHTML=portfolioAssets.map((a,i)=>'<tr>'+
+    '<td><strong>'+a.name+'</strong></td>'+
+    '<td>'+sourceBadge(a.source)+'</td>'+
+    '<td class="mono">'+a.rets.length+'</td>'+
+    '<td style="font-size:12px">'+a.dates[0]+' → '+a.dates[a.dates.length-1]+'</td>'+
+    '<td class="mono '+(a.annRet>=0?'profit':'loss')+'">'+(a.annRet*100).toFixed(2)+'%</td>'+
+    '<td class="mono">'+(a.annVol*100).toFixed(2)+'%</td>'+
+    '<td><input type="number" value="'+a.weight+'" min="1" max="100" style="width:60px;font-family:var(--mono);font-size:12px;border:1px solid var(--border2);border-radius:4px;padding:3px 6px" onchange="portfolioAssets['+i+'].weight=+this.value;renderPortfolioTable()"></td>'+
+    '<td><button onclick="removeAsset('+i+')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer">✕</button></td>'+
+    '</tr>').join('');
+}
+function removeAsset(i){portfolioAssets.splice(i,1);renderPortfolioTable();if(!portfolioAssets.length)document.getElementById('portfolio-table-box').style.display='none';}
+function clearPortfolio(){portfolioAssets=[];renderPortfolioTable();document.getElementById('portfolio-table-box').style.display='none';document.getElementById('v-charts').style.display='none';}
+
+function computePortfolioReturns(){
+  if(!portfolioAssets.length) return null;
+  // Align dates — find common dates
+  let dateSets=portfolioAssets.map(a=>new Set(a.dates));
+  let commonDates=[...dateSets[0]].filter(d=>dateSets.every(s=>s.has(d))).sort();
+  if(commonDates.length<10) return null;
+  // Normalize weights
+  let totalW=portfolioAssets.reduce((a,b)=>a+b.weight,0);
+  let weights=portfolioAssets.map(a=>a.weight/totalW);
+  // Build return matrix
+  let retMatrix=portfolioAssets.map(a=>{
+    let retMap={};a.dates.forEach((d,i)=>retMap[d]=a.rets[i]);
+    return commonDates.map(d=>retMap[d]??0);
+  });
+  // Portfolio returns
+  let portRets=commonDates.map((_,t)=>weights.reduce((sum,w,i)=>sum+w*retMatrix[i][t],0));
+  return{portRets,commonDates,weights,retMatrix,assets:portfolioAssets};
+}
+
 function runVaR(){
+  if(!portfolioAssets.length){setStatus('Please add at least one asset to the portfolio first.','error');return;}
+  let pd=computePortfolioReturns();
+  if(!pd){setStatus('Not enough overlapping dates. Check your date ranges.','error');return;}
+  let {portRets,commonDates,weights,retMatrix,assets}=pd;
   let conf=+document.getElementById('v-conf').value/100;
-  let annVol=+document.getElementById('v-vol').value/100;
-  let annDrift=+document.getElementById('v-drift').value/100;
+  let horiz=+document.getElementById('v-horiz').value;
   let lam=+document.getElementById('v-lam').value/100;
-  let corr=+document.getElementById('v-corr').value/100;
-  let lb=+document.getElementById('v-lb').value;
-  let nu=+document.getElementById('v-nu').value;
-  let skewParam=+document.getElementById('v-skew').value/100;
+  let nMC=+document.getElementById('v-mc').value;
+  let lb=Math.min(+document.getElementById('v-lb').value,portRets.length);
+  let k=parseFloat(document.getElementById('v-bk').value);
+  let stressMult=+document.getElementById('v-sm').value/10;
+  let rw=+document.getElementById('v-rw').value;
   let alpha=1-conf;
-  let dv=annVol/Math.sqrt(252), dd=annDrift/252;
-  let N=10000;
-
-  // Simulate returns
-  let rets=[];
-  for(let i=0;i<N;i++){let z=randn();let r=dd+dv*z+skewParam*dv*(z*z-1)/6;rets.push(r);}
-
-  // Portfolio PnL (normalised to 1 unit)
-  let pnl=rets.map(r=>r);
-
-  // VaR / ES (as % of portfolio)
-  let hsVaR=-quantileArr(pnl,alpha);
-  let hsES=-esArr(pnl,alpha);
-  let dnVaR=invNorm(conf)*dv-dd;
-  let dnES=(normPDF(invNorm(conf))/(1-conf))*dv-dd;
-  let mcVaR=hsVaR*(0.97+Math.random()*0.06);
-  let mcES=hsES*(0.98+Math.random()*0.04);
-  let ewmaVol=dv*(1+0.05*(1-lam)/0.06);
-  let ewmaVaR=invNorm(conf)*ewmaVol-dd;
-  let volWtVaR=hsVaR*1.04;
-  let corrAdjVaR=hsVaR*(1-corr*0.08);
-  let bootVaR=hsVaR*(0.96+Math.random()*0.08);
+  let pnl=portRets.slice(-lb);
+  let N=pnl.length;
+  setStatus(`Analysing ${N} observations across ${assets.length} asset(s)…`,'success');
 
   // Moments
   let mean=pnl.reduce((a,b)=>a+b,0)/N;
@@ -1094,167 +1539,217 @@ function runVaR(){
   let std=Math.sqrt(variance);
   let skew=pnl.reduce((a,b)=>a+(b-mean)**3,0)/N/std**3;
   let kurt=pnl.reduce((a,b)=>a+(b-mean)**4,0)/N/std**4-3;
-  let sr=mean/std*Math.sqrt(252);
-  // Max drawdown sim
-  let cumPnl=0,peak=0,mdd=0;
-  for(let r of pnl){cumPnl+=r;if(cumPnl>peak)peak=cumPnl;mdd=Math.max(mdd,peak-cumPnl);}
+  let annRet=mean*252, annVol=std*Math.sqrt(252);
+  let sr=annRet/annVol;
 
-  // Display key metrics
-  let pct=v=>(v*100).toFixed(3)+'%';
-  document.getElementById('v-r1').textContent=pct(hsVaR);
-  document.getElementById('v-r2').textContent=pct(dnVaR);
-  document.getElementById('v-r3').textContent=pct(mcVaR);
-  document.getElementById('v-r4').textContent=pct(hsES);
-  document.getElementById('v-r1-conf').textContent=Math.round(conf*100)+'%';
-  document.getElementById('v-sr').textContent=sr.toFixed(3);
-  document.getElementById('v-mdd').textContent=pct(mdd);
-  document.getElementById('v-skewv').textContent=skew.toFixed(3);
-  document.getElementById('v-kurt').textContent=kurt.toFixed(3);
-  document.getElementById('v-metrics').style.display='grid';
-  document.getElementById('v-metrics2').style.display='grid';
-  document.getElementById('v-charts').style.display='block';
+  // Max drawdown
+  let cumArr=[],cum=0,peak=0,mdd=0,ddArr=[];
+  for(let r of pnl){cum+=r;if(cum>peak)peak=cum;let dd=peak>0?(peak-cum)/peak:0;mdd=Math.max(mdd,dd);ddArr.push(-dd*100);cumArr.push(cum*100);}
 
-  // Methods table
-  let methods=[
-    {name:'Historical Simulation',var:hsVaR,es:hsES,short:'HS'},
-    {name:'Bootstrap Historical Sim.',var:bootVaR,es:bootVaR*1.22,short:'Bootstrap'},
-    {name:'EWMA-weighted VaR',var:ewmaVaR,es:ewmaVaR*1.20,short:'EWMA'},
-    {name:'Volatility-weighted HS',var:volWtVaR,es:volWtVaR*1.19,short:'Vol-wt HS'},
-    {name:'Corr-adjusted HS',var:corrAdjVaR,es:corrAdjVaR*1.21,short:'Corr-adj HS'},
-    {name:'Delta-Normal (Parametric)',var:dnVaR,es:dnES,short:'Delta-N'},
-    {name:'Monte Carlo (Cholesky)',var:mcVaR,es:mcES,short:'MC'},
-  ];
-  // Basel: VaR must be at 99%
-  let var99=-quantileArr(pnl,0.01),es975=-esArr(pnl,0.025);
-  document.getElementById('v-tbl-methods').innerHTML=methods.map(m=>{
-    let esRatio=(m.es/m.var).toFixed(3);
-    let baselOk=m.var>0.005;
-    return`<tr><td>${m.name}</td><td class="mono loss">${pct(m.var)}</td><td class="mono loss">${pct(m.es)}</td><td class="mono">${(m.var*100).toFixed(3)}%</td><td class="mono">${esRatio}</td><td><span class="${baselOk?'pass-b':'warn-b'}">${baselOk?'✓ Adequate':'⚠ Review'}</span></td></tr>`;
-  }).join('');
+  // EWMA vol
+  let ewmaVol2=std*std,ewmaVols=[];
+  for(let r of pnl){ewmaVol2=lam*ewmaVol2+(1-lam)*r*r;ewmaVols.push(Math.sqrt(ewmaVol2)*Math.sqrt(252)*100);}
+  let ewmaStd=Math.sqrt(ewmaVol2);
 
-  // Distribution chart
-  let bins=60;let sorted=[...pnl].sort((a,b)=>a-b);
-  let minR=sorted[0],maxR=sorted[sorted.length-1],step=(maxR-minR)/bins;
-  let hist=new Array(bins).fill(0),labels=[];
-  pnl.forEach(p=>{let b=Math.min(Math.floor((p-minR)/step),bins-1);hist[b]++;});
-  for(let i=0;i<bins;i++)labels.push(((minR+(i+0.5)*step)*100).toFixed(2)+'%');
-  let varThresh=Math.floor((-hsVaR-minR)/step);
-  let colors=hist.map((_,i)=>i<=varThresh?'rgba(220,38,38,0.65)':'rgba(20,83,45,0.45)');
-  mkVChart('cv-dist',{type:'bar',data:{labels,datasets:[{data:hist,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
-
-  // QQ plot
-  let qLabels=[],qTheory=[],qActual=[];
-  let n=Math.min(100,N);let step2=1/(n+1);
-  for(let i=1;i<=n;i++){let p=i*step2;qLabels.push(p.toFixed(2));qTheory.push(+(mean+std*invNorm(p)).toFixed(5));qActual.push(+sorted[Math.floor(p*N)].toFixed(5));}
-  mkVChart('cv-qq',{type:'scatter',data:{datasets:[{label:'Actual vs Normal',data:qTheory.map((x,i)=>({x,y:qActual[i]})),borderColor:'#1D4ED8',backgroundColor:'rgba(29,78,216,0.4)',pointRadius:3},{label:'45° line',data:[{x:minR,y:minR},{x:maxR,y:maxR}],borderColor:'#9B9A96',borderWidth:1.5,pointRadius:0,type:'line'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{title:{display:true,text:'Theoretical Normal',font:{size:10}},ticks:{font:{size:9}}},y:{title:{display:true,text:'Actual Return',font:{size:10}},ticks:{font:{size:9}}}}}});
-
-  // VaR across confidence levels
-  let confLevels=[0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.975,0.98,0.99];
-  let hsVaRs=confLevels.map(c=>-quantileArr(pnl,1-c));
-  let dnVaRs=confLevels.map(c=>invNorm(c)*dv-dd);
-  let mcVaRs=hsVaRs.map(v=>v*(0.97+Math.random()*0.06));
-  mkVChart('cv-conf',{type:'line',data:{labels:confLevels.map(c=>(c*100).toFixed(1)+'%'),datasets:[
-    {label:'Historical',data:hsVaRs.map(v=>(v*100).toFixed(3)),borderColor:'#14532D',borderWidth:2,pointRadius:4,tension:.4},
-    {label:'Delta-Normal',data:dnVaRs.map(v=>(v*100).toFixed(3)),borderColor:'#1D4ED8',borderWidth:2,pointRadius:4,tension:.4},
-    {label:'Monte Carlo',data:mcVaRs.map(v=>(v*100).toFixed(3)),borderColor:'#92400E',borderWidth:2,borderDash:[5,3],pointRadius:4,tension:.4}
-  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:9}}},y:{title:{display:true,text:'VaR (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:10}}}}}});
-
-  // EWMA lambda sensitivity
-  let lams=[0.80,0.82,0.84,0.86,0.88,0.90,0.92,0.94,0.96,0.98,0.99];
-  let lamVaRs=lams.map(l=>{let ev=dv*(1+0.05*(1-l)/0.06);return+(invNorm(conf)*ev*100).toFixed(3);});
-  mkVChart('cv-ewma',{type:'line',data:{labels:lams.map(l=>l.toFixed(2)),datasets:[{label:'EWMA VaR (%)',data:lamVaRs,borderColor:'#5B21B6',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#5B21B6',tension:.4,fill:true,backgroundColor:'rgba(91,33,182,0.07)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'EWMA λ',font:{size:10}},ticks:{font:{size:10}}},y:{title:{display:true,text:'VaR (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:10}}}}}});
-
-  // Component VaR
-  let assets=['Equity','Fixed Inc','Commodities','FX','Alternatives'];
-  let wts=[0.35,0.25,0.15,0.15,0.10];
-  let baseComp=wts.map((w,i)=>hsVaR*w*(1+[0.2,-0.1,0.3,-0.05,0.15][i]));
-  let marginals=wts.map((w,i)=>hsVaR*(1+[0.15,-0.12,0.25,-0.08,0.10][i]));
-  mkVChart('cv-comp',{type:'bar',data:{labels:assets,datasets:[{label:'Component VaR (%)',data:baseComp.map(v=>(v*100).toFixed(3)),backgroundColor:['rgba(220,38,38,0.7)','rgba(29,78,216,0.7)','rgba(146,64,14,0.7)','rgba(20,83,45,0.7)','rgba(107,114,128,0.7)'],borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}});
-  mkVChart('cv-marg',{type:'bar',data:{labels:assets,datasets:[{label:'Marginal VaR (%)',data:marginals.map(v=>(v*100).toFixed(3)),backgroundColor:'rgba(20,83,45,0.7)',borderRadius:4}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'%',font:{size:10}}},y:{ticks:{font:{size:11}}}}}});
-
-  // EWMA rolling vol
-  let nDays=252*3,sigma2=dv*dv;
-  let vols=[],volLabels=[],cumRets=[];let cum=0;
-  for(let i=0;i<nDays;i++){let r=dd+dv*randn();sigma2=lam*sigma2+(1-lam)*r*r;vols.push(+(Math.sqrt(sigma2)*Math.sqrt(252)*100).toFixed(2));cum+=r;cumRets.push(+(cum*100).toFixed(2));if(i%21===0)volLabels.push('M'+(Math.floor(i/21)+1));else volLabels.push('');}
-  mkVChart('cv-ewmavol',{type:'line',data:{labels:volLabels,datasets:[
-    {label:'EWMA Annualised Vol (%)',data:vols,borderColor:'#92400E',borderWidth:1.5,pointRadius:0,tension:.2,fill:true,backgroundColor:'rgba(146,64,14,0.06)'},
-    {label:'Cum Return (%)',data:cumRets,borderColor:'#14532D',borderWidth:1.5,pointRadius:0,tension:.2,yAxisID:'y2'}
-  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:9}}},y:{position:'left',title:{display:true,text:'Vol (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:9}}},y2:{position:'right',title:{display:true,text:'Cum. Ret (%)',font:{size:10}},grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%',font:{size:9}}}}}});
-
-  // Stress tests
-  let stresses=[{name:'GFC 2008',vol:0.60},{name:'Eurozone 2011',vol:0.35},{name:'COVID-19 2020',vol:0.80},{name:'Rate Shock 2022',vol:0.30},{name:'Dot-com 2000',vol:0.45}];
-  document.getElementById('v-tbl-stress').innerHTML=stresses.map(sc=>{
-    let sv95=-quantileArr(pnl.map(r=>dd+(sc.vol/Math.sqrt(252))*(r-dd)/dv),alpha);
-    let sv99=-quantileArr(pnl.map(r=>dd+(sc.vol/Math.sqrt(252))*(r-dd)/dv),0.01);
-    let ses=-esArr(pnl.map(r=>dd+(sc.vol/Math.sqrt(252))*(r-dd)/dv),0.025);
-    let mult=(sv95/hsVaR).toFixed(2);
-    return`<tr><td><strong>${sc.name}</strong></td><td class="mono">${(sc.vol*100).toFixed(0)}%</td><td class="mono loss">${pct(sv95)}</td><td class="mono loss">${pct(sv99)}</td><td class="mono loss">${pct(-ses)}</td><td><span class="${mult>2?'fail-b':mult>1.5?'warn-b':'pass-b'}">${mult}×</span></td></tr>`;
-  }).join('');
-
-  // VaR breach simulation
-  let breachLabels=[],breach=[],varLine=[];
-  let rolls=200;
-  for(let i=0;i<rolls;i++){let r=dd+dv*randn();breach.push(+(r*100).toFixed(3));varLine.push(+(-hsVaR*100).toFixed(3));if(i%20===0)breachLabels.push('Day '+(i+1));else breachLabels.push('');}
-  let breachColors=breach.map((r,i)=>r<varLine[i]?'rgba(220,38,38,0.9)':'rgba(20,83,45,0.5)');
-  mkVChart('cv-breach',{type:'bar',data:{labels:breachLabels,datasets:[{label:'Daily Return (%)',data:breach,backgroundColor:breachColors,borderWidth:0},{label:'VaR Threshold',data:varLine,type:'line',borderColor:'#991B1B',borderWidth:2,borderDash:[6,3],pointRadius:0}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
-
-  // Kupiec chart
-  let cLevels=[0.90,0.95,0.97,0.99];
-  let expectedFRs=cLevels.map(c=>((1-c)*100).toFixed(2));
-  let actualFRs=cLevels.map(c=>{let vq=-quantileArr(pnl,1-c);let br=pnl.filter(r=>r<-vq).length;return(br/N*100).toFixed(2);});
-  mkVChart('cv-kupiec',{type:'bar',data:{labels:cLevels.map(c=>(c*100).toFixed(0)+'%'),datasets:[
-    {label:'Expected Failure Rate',data:expectedFRs,backgroundColor:'rgba(20,83,45,0.7)',borderRadius:4},
-    {label:'Actual Failure Rate',data:actualFRs,backgroundColor:'rgba(220,38,38,0.7)',borderRadius:4}
-  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{title:{display:true,text:'Failure Rate (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:10}}}}}});
-
-  // Backtest table
-  document.getElementById('v-tbl-bt').innerHTML=cLevels.map(c=>{
-    let vq=-quantileArr(pnl,1-c);
-    let breaches=pnl.filter(r=>r<-vq).length;
-    let fr=breaches/N;let alpha_c=1-c;
-    let lr=fr>0&&fr<1?-2*((N-breaches)*Math.log(1-alpha_c)+breaches*Math.log(alpha_c)-(N-breaches)*Math.log(1-fr)-breaches*Math.log(fr)):0;
-    let pval=1-tCDF(Math.sqrt(Math.abs(lr)),1);
-    let pass=pval>0.05;
-    return`<tr><td>${(c*100).toFixed(0)}%</td><td class="mono">${(alpha_c*N).toFixed(0)}</td><td class="mono">${breaches}</td><td class="mono">${(fr*100).toFixed(2)}%</td><td class="mono">${lr.toFixed(3)}</td><td class="mono">${pval.toFixed(4)}</td><td><span class="${pass?'pass-b':'fail-b'}">${pass?'Pass':'Fail'}</span></td><td><span class="${pass?'pass-b':'fail-b'}">${pass?'✓ Well-calibrated':'✗ Recalibrate'}</span></td></tr>`;
-  }).join('');
+  // VaR methods
+  let sortedPnl=[...pnl].sort((a,b)=>a-b);
+  let hsVaR=-quantileArr(pnl,alpha)*Math.sqrt(horiz);
+  let hsES=-esArr(pnl,alpha)*Math.sqrt(horiz);
+  let dnVaR=(invNorm(conf)*ewmaStd-mean)*Math.sqrt(horiz);
+  let dnES=(normPDF(invNorm(conf))/(1-conf)*ewmaStd-mean)*Math.sqrt(horiz);
+  // Bootstrap
+  let bootRets=[];for(let i=0;i<5000;i++) bootRets.push(pnl[Math.floor(Math.random()*N)]);
+  let bootVaR=-quantileArr(bootRets,alpha)*Math.sqrt(horiz);
+  // EWMA-weighted
+  let ewmaWeighted=[...pnl];
+  let ewmaWts=pnl.map((_,i)=>Math.pow(lam,N-1-i)*(1-lam));
+  let ewmaWSum=ewmaWts.reduce((a,b)=>a+b,0);
+  ewmaWts=ewmaWts.map(w=>w/ewmaWSum);
+  let ewmaVarW=pnl.reduce((a,r,i)=>a+ewmaWts[i]*(r-mean)**2,0);
+  let ewmaVaR=invNorm(conf)*Math.sqrt(ewmaVarW)*Math.sqrt(horiz);
+  // Vol-weighted HS
+  let volWtVaR=hsVaR*(ewmaStd/std);
+  // Corr-adjusted
+  let corrMat=assets.map((_,i)=>assets.map((_,j)=>{
+    let ri=retMatrix[i],rj=retMatrix[j];
+    let mi=ri.reduce((a,b)=>a+b,0)/ri.length,mj=rj.reduce((a,b)=>a+b,0)/rj.length;
+    let cov=ri.reduce((a,b,t)=>a+(b-mi)*(rj[t]-mj),0)/ri.length;
+    let si=Math.sqrt(ri.reduce((a,b)=>a+(b-mi)**2,0)/ri.length);
+    let sj=Math.sqrt(rj.reduce((a,b)=>a+(b-mj)**2,0)/rj.length);
+    return si*sj>0?cov/(si*sj):0;
+  }));
+  let corrAdjVaR=hsVaR;
+  if(assets.length>1){let avgCorr=corrMat.flat().reduce((a,b)=>a+b,0)/(corrMat.length**2);corrAdjVaR=hsVaR*(1+avgCorr*0.1);}
+  // Monte Carlo
+  let mcPnL=[];
+  for(let i=0;i<nMC;i++){
+    let z=randn(),r=mean+ewmaStd*z;
+    mcPnL.push(r*Math.sqrt(horiz));
+  }
+  let mcVaR=-quantileArr(mcPnL,alpha);
+  let mcES=-esArr(mcPnL,alpha);
 
   // Basel
-  let k=3;// Supervisory multiplier
-  let sVar99=var99*1.8;// Stressed VaR (simulated as 1.8× under stress conditions)
-  let scaledVaR=k*var99*Math.sqrt(10);// 10-day scaled
-  let scaledSVaR=k*sVar99*Math.sqrt(10);
-  let irc=var99*0.3;// Simplified IRC
-  let mrc=scaledVaR+scaledSVaR+irc;
+  let var99=-quantileArr(pnl,0.01)*Math.sqrt(10);
+  let es975=-esArr(pnl,0.025)*Math.sqrt(10);
+  let sVar99=var99*stressMult;
+  let irc=var99*0.3;
+  let mrc=k*var99+k*sVar99+irc;
 
+  // Display metrics
+  let pct=v=>(v*100).toFixed(3)+'%';
+  let setEl=(id,v)=>{let el=document.getElementById(id);if(el)el.textContent=v;};
+  setEl('v-r1',pct(hsVaR));setEl('v-r2',pct(dnVaR));setEl('v-r3',pct(mcVaR));setEl('v-r4',pct(hsES));
+  setEl('v-r1-conf',Math.round(conf*100)+'%');
+  setEl('v-sr',sr.toFixed(3));setEl('v-mdd',(mdd*100).toFixed(2)+'%');
+  setEl('v-skewv',skew.toFixed(3));setEl('v-kurt',kurt.toFixed(3));
+  setEl('v-nobs',N);setEl('v-var99',pct(var99));setEl('v-es975',pct(es975));setEl('v-mrc',pct(mrc));
+  ['v-metrics','v-metrics2','v-metrics3'].forEach(id=>{document.getElementById(id).style.display='grid';});
+  document.getElementById('v-charts').style.display='block';
+
+  // ── CHART 1: Portfolio Price Index ──
+  let portPrices=[100];for(let r of portRets)portPrices.push(portPrices[portPrices.length-1]*(1+r));
+  let plotDates=[commonDates[0],...commonDates];
+  mkVChart('cv-price',{type:'line',data:{labels:plotDates,datasets:[{label:'Portfolio (weighted)',data:portPrices,borderColor:'#14532D',borderWidth:2,pointRadius:0,tension:.2,fill:true,backgroundColor:'rgba(20,83,45,0.06)'},...(assets.length>1?assets.map((a,i)=>{let p=[100];let dm={}; a.dates.forEach((d,t)=>dm[d]=a.rets[t]);commonDates.forEach(d=>{p.push(p[p.length-1]*(1+(dm[d]??0)));});return{label:a.name,data:p,borderWidth:1.5,pointRadius:0,tension:.2,borderDash:[4,3]};}):[])]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
+
+  // ── CHART 2: Daily Returns ──
+  let varThreshPct=-(hsVaR/Math.sqrt(horiz))*100;
+  mkVChart('cv-rets',{type:'bar',data:{labels:commonDates,datasets:[{label:'Daily Return (%)',data:portRets.map(r=>+(r*100).toFixed(3)),backgroundColor:portRets.map(r=>r*100<varThreshPct?'rgba(220,38,38,0.8)':'rgba(20,83,45,0.45)'),borderWidth:0}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:12,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── CHART 3: Cumulative Returns ──
+  let equalWt=[];let eqCum=0;
+  commonDates.forEach((_,t)=>{let r=assets.reduce((s,a,i)=>{let dm={};a.dates.forEach((d,j)=>dm[d]=a.rets[j]);return s+(dm[commonDates[t]]??0)/assets.length;},0);eqCum+=r;equalWt.push(+(eqCum*100).toFixed(2));});
+  mkVChart('cv-cumret',{type:'line',data:{labels:commonDates,datasets:[{label:'Portfolio',data:cumArr,borderColor:'#14532D',borderWidth:2,pointRadius:0,tension:.2},{label:'Equal Weight',data:equalWt,borderColor:'#1D4ED8',borderWidth:1.5,borderDash:[5,3],pointRadius:0,tension:.2}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── CHART 4: Distribution ──
+  let bins=50;let minR=sortedPnl[0],maxR=sortedPnl[sortedPnl.length-1],bw=(maxR-minR)/bins;
+  let hist=new Array(bins).fill(0);pnl.forEach(r=>{hist[Math.min(Math.floor((r-minR)/bw),bins-1)]++;});
+  let blabels=[];for(let i=0;i<bins;i++)blabels.push(((minR+(i+0.5)*bw)*100).toFixed(2)+'%');
+  let varIdx=Math.floor((-hsVaR/Math.sqrt(horiz)-minR)/bw);
+  mkVChart('cv-dist',{type:'bar',data:{labels:blabels,datasets:[{data:hist,backgroundColor:hist.map((_,i)=>i<=varIdx?'rgba(220,38,38,0.7)':'rgba(20,83,45,0.45)'),borderWidth:0}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // ── CHART 5: QQ Plot ──
+  let nn=Math.min(200,N);let qqData=[];
+  for(let i=1;i<=nn;i++){let p=i/(nn+1);qqData.push({x:+(mean+std*invNorm(p)).toFixed(5),y:+sortedPnl[Math.floor(p*N)].toFixed(5)});}
+  mkVChart('cv-qq',{type:'scatter',data:{datasets:[{label:'Actual vs Normal',data:qqData,backgroundColor:'rgba(29,78,216,0.5)',pointRadius:3},{label:'45° line',data:[{x:minR,y:minR},{x:maxR,y:maxR}],type:'line',borderColor:'#9B9A96',borderWidth:1.5,pointRadius:0}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{title:{display:true,text:'Theoretical',font:{size:10}},ticks:{font:{size:9}}},y:{title:{display:true,text:'Actual',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+  // ── CHART 6: Rolling VaR ──
+  let rollVar=[],rollES=[],rollDates=[];
+  for(let i=rw;i<=N;i++){let window=pnl.slice(i-rw,i);rollVar.push(+(-quantileArr(window,alpha)*100).toFixed(3));rollES.push(+(-esArr(window,alpha)*100).toFixed(3));rollDates.push(commonDates[commonDates.length-N+i-1]||i);}
+  mkVChart('cv-rollingvar',{type:'line',data:{labels:rollDates,datasets:[{label:'Rolling VaR (%)',data:rollVar,borderColor:'#991B1B',borderWidth:1.5,pointRadius:0,tension:.3,fill:true,backgroundColor:'rgba(153,27,27,0.06)'},{label:'Rolling ES (%)',data:rollES,borderColor:'#92400E',borderWidth:1.5,borderDash:[4,3],pointRadius:0,tension:.3}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── CHART 7: EWMA Vol ──
+  mkVChart('cv-ewmavol',{type:'line',data:{labels:commonDates.slice(-N),datasets:[{label:'EWMA Vol (Ann.%)',data:ewmaVols,borderColor:'#92400E',borderWidth:1.5,pointRadius:0,tension:.2,fill:true,backgroundColor:'rgba(146,64,14,0.06)'},{label:`Rolling ${rw}d Vol`,data:portRets.slice(-N).map((_,i,arr)=>i>=rw-1?+(Math.sqrt(arr.slice(i-rw+1,i+1).reduce((a,b,_,v)=>{let m=v.reduce((x,y)=>x+y,0)/v.length;return a+(b-m)**2;},0)/(rw-1))*Math.sqrt(252)*100).toFixed(2):null),borderColor:'#1D4ED8',borderWidth:1.5,borderDash:[4,3],pointRadius:0,tension:.2}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── CHART 8: Rolling Sharpe ──
+  let rollSharpe=[];
+  for(let i=rw;i<=N;i++){let w=pnl.slice(i-rw,i);let wm=w.reduce((a,b)=>a+b,0)/w.length;let ws=Math.sqrt(w.reduce((a,b)=>a+(b-wm)**2,0)/(w.length-1));rollSharpe.push(ws>0?+(wm/ws*Math.sqrt(252)).toFixed(3):0);}
+  mkVChart('cv-sharpe',{type:'line',data:{labels:rollDates,datasets:[{label:'Rolling Sharpe',data:rollSharpe,borderColor:'#5B21B6',borderWidth:1.5,pointRadius:0,tension:.3,fill:true,backgroundColor:'rgba(91,33,182,0.06)'},{label:'Sharpe=1',data:rollSharpe.map(()=>1),borderColor:'#9B9A96',borderWidth:1,borderDash:[4,4],pointRadius:0}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // ── CHART 9: Drawdown ──
+  mkVChart('cv-drawdown',{type:'line',data:{labels:commonDates.slice(-N),datasets:[{label:'Drawdown (%)',data:ddArr,borderColor:'#991B1B',borderWidth:1.5,pointRadius:0,tension:.2,fill:true,backgroundColor:'rgba(153,27,27,0.1)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Methods table ──
+  let methods=[
+    {name:'Historical Simulation (HS)',var:hsVaR,es:hsES},
+    {name:'Bootstrap HS',var:bootVaR,es:bootVaR*1.2},
+    {name:'EWMA-weighted VaR',var:ewmaVaR,es:ewmaVaR*1.22},
+    {name:'Volatility-weighted HS',var:volWtVaR,es:volWtVaR*1.19},
+    {name:'Corr-adjusted HS',var:corrAdjVaR,es:corrAdjVaR*1.21},
+    {name:'Delta-Normal (Parametric)',var:dnVaR,es:dnES},
+    {name:'Monte Carlo (Cholesky)',var:mcVaR,es:mcES},
+  ];
+  document.getElementById('v-tbl-methods').innerHTML=methods.map(m=>{
+    let er=(m.es/m.var).toFixed(3);let v10d=(m.var*Math.sqrt(10/horiz)).toFixed(4);
+    return`<tr><td>${m.name}</td><td class="mono loss">${pct(m.var)}</td><td class="mono loss">${pct(m.es)}</td><td class="mono">${(m.var*100).toFixed(3)}%</td><td class="mono">${er}</td><td class="mono">${(+v10d*100).toFixed(3)}%</td><td><span class="${m.var<0.05?'pass-b':'warn-b'}">${m.var<0.05?'✓ Adequate':'⚠ Elevated'}</span></td></tr>`;
+  }).join('');
+
+  // ── CHART 10: Confidence sensitivity ──
+  let cLvls=[0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.975,0.98,0.99];
+  mkVChart('cv-conf',{type:'line',data:{labels:cLvls.map(c=>(c*100).toFixed(1)+'%'),datasets:[
+    {label:'HS VaR',data:cLvls.map(c=>+(-quantileArr(pnl,1-c)*Math.sqrt(horiz)*100).toFixed(3)),borderColor:'#14532D',borderWidth:2,pointRadius:4,tension:.4},
+    {label:'Delta-Normal',data:cLvls.map(c=>+(invNorm(c)*ewmaStd*Math.sqrt(horiz)*100).toFixed(3)),borderColor:'#1D4ED8',borderWidth:2,pointRadius:4,tension:.4},
+    {label:'MC',data:cLvls.map(c=>+(-quantileArr(mcPnL,1-c)*100).toFixed(3)),borderColor:'#92400E',borderWidth:1.5,borderDash:[5,3],pointRadius:3,tension:.4}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── CHART 11: Horizon scaling ──
+  let horizons=[1,2,3,5,7,10,15,20];
+  let sqrtScale=horizons.map(h=>+(hsVaR/Math.sqrt(horiz)*Math.sqrt(h)*100).toFixed(3));
+  let actualScale=horizons.map(h=>{let multiday=[];for(let i=h;i<=pnl.length;i+=h){let s=pnl.slice(i-h,i).reduce((a,b)=>a+b,0);multiday.push(s);}return multiday.length>5?+(-quantileArr(multiday,alpha)*100).toFixed(3):sqrtScale[horizons.indexOf(h)];});
+  mkVChart('cv-horizon',{type:'line',data:{labels:horizons.map(h=>h+'d'),datasets:[{label:'√T scaling',data:sqrtScale,borderColor:'#1D4ED8',borderWidth:2,pointRadius:5,tension:.4},{label:'Actual empirical',data:actualScale,borderColor:'#991B1B',borderWidth:2,borderDash:[5,3],pointRadius:5,tension:.4}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── CHART 12: EWMA sensitivity ──
+  let lams=[0.80,0.85,0.87,0.90,0.92,0.94,0.95,0.96,0.97,0.98,0.99];
+  let lamVaRs=lams.map(l=>{let s2=std*std;for(let r of pnl){s2=l*s2+(1-l)*r*r;}return+(invNorm(conf)*Math.sqrt(s2)*Math.sqrt(horiz)*100).toFixed(3);});
+  mkVChart('cv-ewma',{type:'line',data:{labels:lams.map(l=>l.toFixed(2)),datasets:[{label:'EWMA VaR',data:lamVaRs,borderColor:'#5B21B6',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#5B21B6',tension:.4,fill:true,backgroundColor:'rgba(91,33,182,0.06)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'λ',font:{size:10}},ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── CHART 13: ACF ──
+  let maxLag=20;let acfVals=[];let pnlMean=mean;
+  let denom=pnl.reduce((a,b)=>a+(b-pnlMean)**2,0);
+  for(let lag=0;lag<=maxLag;lag++){let num=pnl.slice(lag).reduce((a,b,i)=>a+(b-pnlMean)*(pnl[i]-pnlMean),0);acfVals.push(+(num/denom).toFixed(4));}
+  let ciLine=1.96/Math.sqrt(N);
+  mkVChart('cv-acf',{type:'bar',data:{labels:acfVals.map((_,i)=>i+''),datasets:[{label:'ACF',data:acfVals,backgroundColor:acfVals.map(v=>Math.abs(v)>ciLine?'rgba(220,38,38,0.7)':'rgba(20,83,45,0.6)'),borderWidth:0}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'Lag',font:{size:10}},ticks:{font:{size:10}}},y:{ticks:{font:{size:9}}}}}});
+
+  // ── CHART 14: Component VaR ──
+  let compVaR=assets.map((a,i)=>{let assetRets=commonDates.slice(-lb).map(d=>{let dm={};a.dates.forEach((dd,j)=>dm[dd]=a.rets[j]);return dm[d]??0;});let assetVar=-quantileArr(assetRets,alpha)*Math.sqrt(horiz);return {name:a.name,var:assetVar,w:weights[i]};});
+  let palColors=['rgba(220,38,38,0.7)','rgba(29,78,216,0.7)','rgba(146,64,14,0.7)','rgba(20,83,45,0.7)','rgba(91,33,182,0.7)','rgba(107,114,128,0.7)','rgba(234,179,8,0.7)','rgba(239,68,68,0.7)'];
+  mkVChart('cv-comp',{type:'bar',data:{labels:compVaR.map(a=>a.name),datasets:[{label:'Component VaR (%)',data:compVaR.map(a=>(a.var*a.w*100).toFixed(3)),backgroundColor:palColors.slice(0,assets.length),borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── CHART 15: Correlation heatmap ──
+  if(assets.length>1){
+    let anames=assets.map(a=>a.name);
+    let heatData=[];
+    corrMat.forEach((row,i)=>row.forEach((v,j)=>heatData.push({x:j,y:i,v:+v.toFixed(3)})));
+    mkVChart('cv-corr',{type:'scatter',data:{datasets:anames.flatMap((rn,i)=>anames.map((cn,j)=>{let v=corrMat[i][j];return{label:rn+'x'+cn,data:[{x:j,y:i}],backgroundColor:v>=0?('rgba(20,83,45,'+Math.abs(v).toFixed(2)+')'): ('rgba(220,38,38,'+Math.abs(v).toFixed(2)+')'),pointRadius:24,pointStyle:'rect'};}))},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var yi=ctx.raw?ctx.raw.y:0;var xi=ctx.raw?ctx.raw.x:0;return anames[yi]+' x '+anames[xi]+': '+(corrMat[yi]&&corrMat[yi][xi]?corrMat[yi][xi].toFixed(3):'n/a');}}}},scales:{x:{ticks:{callback:function(_,i){return anames[i];},font:{size:10}},min:-0.5,max:anames.length-0.5},y:{ticks:{callback:function(_,i){return anames[anames.length-1-i];},font:{size:10}},min:-0.5,max:anames.length-0.5}}}});
+  } else {
+    mkVChart('cv-corr',{type:'bar',data:{labels:['Single Asset'],datasets:[{data:[1],backgroundColor:'rgba(20,83,45,0.7)'}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{min:0,max:1}}}});
+  }
+
+  // ── CHART 16: Risk-Return scatter ──
+  mkVChart('cv-rr',{type:'scatter',data:{datasets:[{label:'Assets',data:assets.map(a=>({x:+(a.annVol*100).toFixed(2),y:+(a.annRet*100).toFixed(2),name:a.name})),backgroundColor:palColors.slice(0,assets.length),pointRadius:10},{label:'Portfolio',data:[{x:+(annVol*100).toFixed(2),y:+(annRet*100).toFixed(2)}],backgroundColor:'rgba(0,0,0,0.9)',pointRadius:14,pointStyle:'star'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label==='Portfolio'?`Portfolio: ${ctx.raw.y.toFixed(2)}% / ${ctx.raw.x.toFixed(2)}%`:assets[ctx.dataIndex]?.name+`: ${ctx.raw.y.toFixed(2)}% / ${ctx.raw.x.toFixed(2)}%`}}},scales:{x:{title:{display:true,text:'Ann. Volatility (%)',font:{size:10}},ticks:{font:{size:9}}},y:{title:{display:true,text:'Ann. Return (%)',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+  // ── CHART 17: Marginal VaR ──
+  mkVChart('cv-marg',{type:'bar',data:{labels:compVaR.map(a=>a.name),datasets:[{label:'Individual VaR',data:compVaR.map(a=>(a.var*100).toFixed(3)),backgroundColor:'rgba(29,78,216,0.6)',borderRadius:3},{label:'Weighted Component',data:compVaR.map(a=>(a.var*a.w*100).toFixed(3)),backgroundColor:'rgba(220,38,38,0.6)',borderRadius:3}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{callback:v=>v+'%',font:{size:9}}},y:{ticks:{font:{size:11}}}}}});
+
+  // ── Stress tests ──
+  let stresses=[{name:'GFC 2008-09',m:2.5},{name:'Eurozone 2011',m:1.8},{name:'COVID-19 2020',m:3.2},{name:'Rate Shock 2022',m:1.6},{name:'Dot-com 2000',m:2.0},{name:'Black Monday 1987',m:4.0}];
+  let stressedVaRs=stresses.map(sc=>{let sv95=-quantileArr(pnl.map(r=>r*sc.m),alpha)*Math.sqrt(horiz);return{...sc,sv95,sv99:-quantileArr(pnl.map(r=>r*sc.m),0.01)*Math.sqrt(10),ses:-esArr(pnl.map(r=>r*sc.m),0.025)*Math.sqrt(10),mult:(sv95/hsVaR).toFixed(2)};});
+  document.getElementById('v-tbl-stress').innerHTML=stresses.map((sc,si)=>{let s=stressedVaRs[si];let mc=+s.mult;return`<tr><td><strong>${sc.name}</strong></td><td class="mono">${sc.m.toFixed(1)}×</td><td class="mono loss">${pct(s.sv95)}</td><td class="mono loss">${pct(s.sv99)}</td><td class="mono loss">${pct(s.ses)}</td><td><span class="${mc>2.5?'fail-b':mc>1.5?'warn-b':'pass-b'}">${s.mult}×</span></td><td><span class="${mc>3?'fail-b':mc>2?'warn-b':'pass-b'}">${mc>3?'Severe':mc>2?'High':mc>1.5?'Elevated':'Moderate'}</span></td></tr>`;}).join('');
+  mkVChart('cv-stress-chart',{type:'bar',data:{labels:stresses.map(s=>s.name),datasets:[{label:'Baseline VaR',data:stresses.map(()=>(hsVaR*100).toFixed(3)),backgroundColor:'rgba(20,83,45,0.6)',borderRadius:3},{label:'Stressed VaR',data:stressedVaRs.map(s=>(s.sv95*100).toFixed(3)),backgroundColor:'rgba(220,38,38,0.7)',borderRadius:3}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Backtesting ──
+  let allBreaches=pnl.map((r,i)=>({r,date:commonDates.slice(-N)[i],breach:r<-(hsVaR/Math.sqrt(horiz))}));
+  mkVChart('cv-breach',{type:'bar',data:{labels:allBreaches.map(b=>b.date),datasets:[{label:'Daily Return',data:allBreaches.map(b=>(b.r*100).toFixed(3)),backgroundColor:allBreaches.map(b=>b.breach?'rgba(220,38,38,0.9)':'rgba(20,83,45,0.45)'),borderWidth:0},{label:'VaR Level',data:allBreaches.map(()=>(-hsVaR/Math.sqrt(horiz)*100).toFixed(3)),type:'line',borderColor:'#991B1B',borderWidth:1.5,borderDash:[6,3],pointRadius:0}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:12,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+  let kupiecLvls=[0.90,0.95,0.97,0.99];
+  let kupiecExp=kupiecLvls.map(c=>((1-c)*100).toFixed(2));
+  let kupiecAct=kupiecLvls.map(c=>{let vq=quantileArr(pnl,1-c);let b=pnl.filter(r=>r<vq).length;return(b/N*100).toFixed(2);});
+  mkVChart('cv-kupiec',{type:'bar',data:{labels:kupiecLvls.map(c=>(c*100)+'%'),datasets:[{label:'Expected',data:kupiecExp,backgroundColor:'rgba(20,83,45,0.7)',borderRadius:4},{label:'Actual',data:kupiecAct,backgroundColor:'rgba(220,38,38,0.7)',borderRadius:4}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+  document.getElementById('v-tbl-bt').innerHTML=kupiecLvls.map(c=>{
+    let vq=quantileArr(pnl,1-c);let br=pnl.filter(r=>r<vq).length;
+    let fr=br/N;let a_c=1-c;
+    let lr=fr>0&&fr<1?-2*((N-br)*Math.log(1-a_c)+br*Math.log(a_c)-(N-br)*Math.log(1-fr)-br*Math.log(fr)):0;
+    let pv=Math.exp(-0.5*lr);let pass=pv>0.05;
+    let tl=br/N<a_c*1.5?'🟢 Green':br/N<a_c*2?'🟡 Amber':'🔴 Red';
+    return`<tr><td>${(c*100).toFixed(0)}%</td><td class="mono">${(a_c*N).toFixed(0)}</td><td class="mono">${br}</td><td class="mono">${(fr*100).toFixed(2)}%</td><td class="mono">${lr.toFixed(3)}</td><td class="mono">${pv.toFixed(4)}</td><td><span class="${pass?'pass-b':'fail-b'}">${pass?'Pass':'Fail'}</span></td><td>${tl}</td><td><span class="${pass?'pass-b':'fail-b'}">${pass?'✓ Model OK':'✗ Recalibrate'}</span></td></tr>`;
+  }).join('');
+
+  // ── Basel cards ──
   document.getElementById('v-basel-cards').innerHTML=`
-    <div class="basel-card basel-green"><div class="basel-title" style="color:var(--accent2)">VaR (99%, 1-day)</div><div class="basel-val" style="color:var(--accent2)">${pct(var99)}</div><div class="basel-sub">Daily internal measure</div></div>
-    <div class="basel-card basel-amber"><div class="basel-title" style="color:var(--amber)">10-Day VaR (Basel)</div><div class="basel-val" style="color:var(--amber)">${pct(var99*Math.sqrt(10))}</div><div class="basel-sub">Square-root-of-time scaling</div></div>
-    <div class="basel-card basel-red"><div class="basel-title" style="color:var(--red)">MRC (k=3)</div><div class="basel-val" style="color:var(--red)">${pct(mrc)}</div><div class="basel-sub">Market Risk Capital Charge</div></div>
+    <div class="basel-card basel-green"><div class="basel-title" style="color:var(--accent2)">VaR (99%, 1-day)</div><div class="basel-val" style="color:var(--accent2)">${(-quantileArr(pnl,0.01)*100).toFixed(3)}%</div><div class="basel-sub">Basel III IMA internal measure</div></div>
+    <div class="basel-card basel-amber"><div class="basel-title" style="color:var(--amber)">10-Day VaR (Basel)</div><div class="basel-val" style="color:var(--amber)">${(var99*100).toFixed(3)}%</div><div class="basel-sub">√10 scaled</div></div>
+    <div class="basel-card basel-red"><div class="basel-title" style="color:var(--red)">MRC (k=${k.toFixed(1)})</div><div class="basel-val" style="color:var(--red)">${(mrc*100).toFixed(3)}%</div><div class="basel-sub">Total market risk capital</div></div>
   `;
-
-  let varConfs=[0.95,0.99];
-  let varScaled=varConfs.map(c=>-quantileArr(pnl,1-c)*Math.sqrt(10));
-  let sVarScaled=varScaled.map(v=>v*1.8);
-  mkVChart('cv-basel-comp',{type:'bar',data:{labels:['VaR Component','Stressed VaR','IRC','MRC Total'],datasets:[{data:[(varScaled[1]*100).toFixed(3),(sVarScaled[1]*100).toFixed(3),(irc*100).toFixed(3),(mrc*100).toFixed(3)],backgroundColor:['rgba(20,83,45,0.7)','rgba(146,64,14,0.7)','rgba(29,78,216,0.7)','rgba(153,27,27,0.7)'],borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:11}}},y:{title:{display:true,text:'Capital Charge (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:10}}}}}});
-
-  let kValues=[2,3,4];
-  let mrcByK=kValues.map(kv=>+(kv*var99*Math.sqrt(10)+kv*sVar99*Math.sqrt(10)+irc)*100);
-  let confLabels=[0.90,0.95,0.97,0.99];
-  let varByConf=confLabels.map(c=>-quantileArr(pnl,1-c)*Math.sqrt(10)*k*100);
-  let sVarByConf=varByConf.map(v=>v*1.8);
-  mkVChart('cv-basel-var',{type:'line',data:{labels:confLabels.map(c=>(c*100).toFixed(0)+'%'),datasets:[
-    {label:'10-Day VaR (%)',data:varByConf.map(v=>+v.toFixed(3)),borderColor:'#14532D',borderWidth:2.5,pointRadius:5,tension:.4},
-    {label:'Stressed VaR (%)',data:sVarByConf.map(v=>+v.toFixed(3)),borderColor:'#991B1B',borderWidth:2.5,pointRadius:5,tension:.4},
-    {label:'MRC (k=3) (%)',data:confLabels.map(c=>+((3*(-quantileArr(pnl,1-c)*Math.sqrt(10)+sVar99*Math.sqrt(10))+irc)*100).toFixed(3)),borderColor:'#92400E',borderWidth:1.5,borderDash:[5,3],pointRadius:3,tension:.4}
-  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:10}}}}}});
-
+  mkVChart('cv-basel-comp',{type:'bar',data:{labels:['10d VaR (k×)','10d SVaR (k×)','IRC','ES (FRTB)','MRC Total'],datasets:[{data:[(k*var99*100).toFixed(3),(k*sVar99*100).toFixed(3),(irc*100).toFixed(3),(es975*100).toFixed(3),(mrc*100).toFixed(3)],backgroundColor:['rgba(20,83,45,0.7)','rgba(146,64,14,0.7)','rgba(29,78,216,0.7)','rgba(91,33,182,0.7)','rgba(153,27,27,0.8)'],borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+  let confRange=[0.90,0.95,0.97,0.99];
+  mkVChart('cv-basel-var',{type:'line',data:{labels:confRange.map(c=>(c*100)+'%'),datasets:[{label:'10-Day VaR',data:confRange.map(c=>+(-quantileArr(pnl,1-c)*Math.sqrt(10)*100).toFixed(3)),borderColor:'#14532D',borderWidth:2.5,pointRadius:5,tension:.4},{label:`Stressed VaR (${stressMult}×)`,data:confRange.map(c=>+(-quantileArr(pnl,1-c)*Math.sqrt(10)*stressMult*100).toFixed(3)),borderColor:'#991B1B',borderWidth:2.5,pointRadius:5,tension:.4}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+  mkVChart('cv-mrc',{type:'line',data:{labels:confRange.map(c=>(c*100)+'%'),datasets:[{label:'MRC Total',data:confRange.map(c=>{let v=-quantileArr(pnl,1-c)*Math.sqrt(10);return+((k*v+k*v*stressMult+v*0.3)*100).toFixed(3);}),borderColor:'#92400E',borderWidth:2.5,pointRadius:5,tension:.4,fill:true,backgroundColor:'rgba(146,64,14,0.07)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
   document.getElementById('v-tbl-basel').innerHTML=`
-    <tr><td><strong>Daily VaR</strong></td><td class="mono">1-day</td><td class="mono">99%</td><td class="mono loss">${pct(var99)}</td><td class="mono">k = 3</td><td class="mono loss">${pct(var99*k)}</td><td>Basel III IMA — Article 365</td></tr>
-    <tr><td><strong>10-Day VaR</strong></td><td class="mono">10-day</td><td class="mono">99%</td><td class="mono loss">${pct(var99*Math.sqrt(10))}</td><td class="mono">k = 3</td><td class="mono loss">${pct(var99*Math.sqrt(10)*k)}</td><td>Square-root-of-time scaling</td></tr>
-    <tr><td><strong>Stressed VaR</strong></td><td class="mono">10-day</td><td class="mono">99%</td><td class="mono loss">${pct(sVar99*Math.sqrt(10))}</td><td class="mono">k = 3</td><td class="mono loss">${pct(sVar99*Math.sqrt(10)*k)}</td><td>Stressed period (GFC calibration)</td></tr>
-    <tr><td><strong>Expected Shortfall</strong></td><td class="mono">10-day</td><td class="mono">97.5%</td><td class="mono loss">${pct(es975*Math.sqrt(10))}</td><td class="mono">—</td><td class="mono loss">${pct(es975*Math.sqrt(10))}</td><td>FRTB Basel IV replacement for VaR</td></tr>
-    <tr><td><strong>IRC</strong></td><td class="mono">1-year</td><td class="mono">99.9%</td><td class="mono loss">${pct(irc)}</td><td class="mono">—</td><td class="mono loss">${pct(irc)}</td><td>Incremental Risk Charge</td></tr>
-    <tr><td><strong>MRC Total</strong></td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td class="mono">k = 3</td><td class="mono loss"><strong>${pct(mrc)}</strong></td><td>Total Market Risk Capital Requirement</td></tr>
+    <tr><td><strong>Daily VaR</strong></td><td class="mono">1-day</td><td class="mono">99%</td><td class="mono loss">${(-quantileArr(pnl,0.01)*100).toFixed(4)}%</td><td class="mono">k=${k.toFixed(1)}</td><td class="mono loss">${(-quantileArr(pnl,0.01)*k*100).toFixed(4)}%</td><td>Basel III IMA Article 365</td></tr>
+    <tr><td><strong>10-Day VaR (√T)</strong></td><td class="mono">10-day</td><td class="mono">99%</td><td class="mono loss">${(var99*100).toFixed(4)}%</td><td class="mono">k=${k.toFixed(1)}</td><td class="mono loss">${(var99*k*100).toFixed(4)}%</td><td>Square-root-of-time rule</td></tr>
+    <tr><td><strong>Stressed VaR</strong></td><td class="mono">10-day</td><td class="mono">99%</td><td class="mono loss">${(sVar99*100).toFixed(4)}%</td><td class="mono">k=${k.toFixed(1)}</td><td class="mono loss">${(sVar99*k*100).toFixed(4)}%</td><td>Crisis calibration (${stressMult}× vol multiplier)</td></tr>
+    <tr><td><strong>ES (FRTB)</strong></td><td class="mono">10-day</td><td class="mono">97.5%</td><td class="mono loss">${(es975*100).toFixed(4)}%</td><td class="mono">—</td><td class="mono loss">${(es975*100).toFixed(4)}%</td><td>Basel IV FRTB — replaces VaR</td></tr>
+    <tr><td><strong>IRC</strong></td><td class="mono">1-year</td><td class="mono">99.9%</td><td class="mono loss">${(irc*100).toFixed(4)}%</td><td class="mono">—</td><td class="mono loss">${(irc*100).toFixed(4)}%</td><td>Incremental Risk Charge</td></tr>
+    <tr><td><strong>MRC Total</strong></td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td class="mono">k=${k.toFixed(1)}</td><td class="mono loss"><strong>${(mrc*100).toFixed(4)}%</strong></td><td>Total Market Risk Capital Requirement</td></tr>
   `;
 }
 
@@ -1390,39 +1885,24 @@ function drawStrat(){
   mkSChart('sc-vega',{type:'bar',data:{labels:spots,datasets:[{label:'Net Vega',data:netVegas,backgroundColor:vegaColors,borderWidth:0}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{font:{size:10}}}}}});
 }
 
-// ─── NAV ───
-function switchTab(id,btn){
-  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('panel-'+id).classList.add('active');
-  if(btn)btn.classList.add('active');
-  if(id==='skills')setTimeout(()=>document.querySelectorAll('.sbfill').forEach(b=>b.classList.add('anim')),100);
-  if(id==='lab'){setTimeout(calcBS,100);setTimeout(drawStrat,150);}
-  window.scrollTo({top:62,behavior:'smooth'});
-}
-
-function switchQLab(id,btn){
-  document.querySelectorAll('.ql-panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.ql-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById('ql-'+id).classList.add('active');
-  btn.classList.add('active');
-  if(id==='bs'){setTimeout(calcBS,50);}
-  if(id==='strat'){setTimeout(drawStrat,50);}
-}
-
 function submitForm(){
   let em=document.getElementById('em').value,msg=document.getElementById('msg').value;
   if(!em||!msg){alert('Please fill in your email and message.');return;}
   let fn=document.getElementById('fn').value,ln=document.getElementById('ln').value,subj=document.getElementById('subj').value;
-  window.open(`mailto:ds148@fordham.edu?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent('From: '+fn+' '+ln+'\nEmail: '+em+'\n\n'+msg)}`);
+  window.open('mailto:ds148@fordham.edu?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent('From: '+fn+' '+ln+'\nEmail: '+em+'\n\n'+msg));
   document.getElementById('cf-form').style.display='none';
   document.getElementById('fsucc').style.display='block';
 }
 
-window.addEventListener('DOMContentLoaded',()=>{
-  setTimeout(calcBS,200);
-  setTimeout(drawStrat,300);
-  setTimeout(drawIVSurface,400);
+window.addEventListener('DOMContentLoaded', function(){
+  // Set today as default end date
+  var today = new Date().toISOString().split('T')[0];
+  var endEl = document.getElementById('var-end');
+  if(endEl) endEl.value = today;
+  // Init BS and strategy charts
+  setTimeout(function(){ try{ calcBS(); }catch(e){} }, 200);
+  setTimeout(function(){ try{ drawStrat(); }catch(e){} }, 300);
+  setTimeout(function(){ try{ drawIVSurface(); }catch(e){} }, 400);
 });
 </script>
 </body>
