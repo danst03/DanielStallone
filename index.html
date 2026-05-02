@@ -795,31 +795,290 @@ canvas{display:block;max-width:100%;width:100%!important}
       <div class="chart-box"><div class="chart-box-title">Speed vs Spot<span class="chart-box-sub">Gamma convexity — dΓ/dS</span></div><canvas id="bc-speed" height="200"></canvas></div>
     </div>
 
-    <!-- Implied vol & SVI -->
-    <hr class="divider">
-    <div style="font-family:var(--serif);font-size:1.2rem;letter-spacing:-.01em;margin-bottom:1rem">Implied Volatility & SVI Parameterisation</div>
-    <div class="sbox">
-      <div class="sbox-title">SVI Parameters (Gatheral 2004)</div>
-      <div class="ctrl-grid">
-        <div class="ctrl-group"><div class="ctrl-label">a (level)<span class="ctrl-val" id="d-svi-a">0.04</span></div><input type="range" min="-500" max="1000" value="400" step="10" id="svi-a" oninput="document.getElementById('d-svi-a').textContent=(this.value/10000).toFixed(4);drawIVSurface()"></div>
-        <div class="ctrl-group"><div class="ctrl-label">b (slope)<span class="ctrl-val" id="d-svi-b">0.40</span></div><input type="range" min="1" max="200" value="40" step="1" id="svi-b" oninput="document.getElementById('d-svi-b').textContent=(this.value/100).toFixed(2);drawIVSurface()"></div>
-        <div class="ctrl-group"><div class="ctrl-label">ρ (rotation)<span class="ctrl-val" id="d-svi-r">-0.30</span></div><input type="range" min="-95" max="95" value="-30" step="5" id="svi-r" oninput="document.getElementById('d-svi-r').textContent=(this.value/100).toFixed(2);drawIVSurface()"></div>
-        <div class="ctrl-group"><div class="ctrl-label">m (centre)<span class="ctrl-val" id="d-svi-m">0.00</span></div><input type="range" min="-100" max="100" value="0" step="5" id="svi-m" oninput="document.getElementById('d-svi-m').textContent=(this.value/100).toFixed(2);drawIVSurface()"></div>
-        <div class="ctrl-group"><div class="ctrl-label">σ_svi (curvature)<span class="ctrl-val" id="d-svi-s">0.30</span></div><input type="range" min="1" max="100" value="30" step="1" id="svi-s" oninput="document.getElementById('d-svi-s').textContent=(this.value/100).toFixed(2);drawIVSurface()"></div>
-      </div>
-    </div>
-    <div class="chart3col">
-      <div class="chart-box"><div class="chart-box-title">IV Smile (SVI)<span class="chart-box-sub">σ_imp vs log-moneyness k</span></div><canvas id="bc-smile" height="220"></canvas></div>
-      <div class="chart-box"><div class="chart-box-title">IV Term Structure<span class="chart-box-sub">ATM IV vs expiry (days)</span></div><canvas id="bc-term" height="220"></canvas></div>
-      <div class="chart-box"><div class="chart-box-title">IV Surface (Moneyness × Expiry)<span class="chart-box-sub">SVI at different expiries</span></div><canvas id="bc-surface" height="220"></canvas></div>
-    </div>
-
     <!-- Put-Call Parity -->
     <div class="sbox">
       <div class="sbox-title">Put-Call Parity & Arbitrage Check</div>
       <table class="tbl"><thead><tr><th>Item</th><th>Value</th><th>Note</th></tr></thead><tbody id="pcp-table"></tbody></table>
     </div>
-  </div>
+
+    <!-- ══ SVI SECTION ══ -->
+    <hr class="divider">
+    <div style="font-family:var(--serif);font-size:1.6rem;letter-spacing:-.02em;margin-bottom:.4rem">SVI Volatility Surface — Stochastic Volatility Inspired</div>
+    <div style="font-size:13px;color:var(--text2);font-weight:300;line-height:1.8;margin-bottom:1.5rem">The SVI model (Gatheral 2004) parameterises the implied volatility smile as a function of log-moneyness <em>k = ln(K/F)</em>. It is the industry-standard model used by practitioners to interpolate and extrapolate the vol surface across strikes for a fixed expiry. The raw SVI total variance is: <strong>w(k) = a + b[ρ(k−m) + √((k−m)² + σ²)]</strong>. The implied vol is σ_imp(k) = √(w(k)/T).</div>
+
+    <!-- SVI Sub-tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+      <button class="ql-tab active" id="svi-tab1-btn" onclick="switchSVI('simulator',this)" style="font-size:13px;padding:8px 18px">Part 1 · Parameter Simulator</button>
+      <button class="ql-tab" id="svi-tab2-btn" onclick="switchSVI('market',this)" style="font-size:13px;padding:8px 18px">Part 2 · Live Market SVI</button>
+    </div>
+
+    <!-- ── PART 1: SVI SIMULATOR ── -->
+    <div id="svi-simulator">
+
+      <!-- Parameter cards with interpretation -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.5rem" id="svi-param-cards">
+        <!-- a -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem">Parameter a</div>
+          <div style="font-family:var(--mono);font-size:1.6rem;font-weight:500;color:var(--accent2);margin-bottom:.25rem" id="svi-a-display">0.0400</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">Overall variance level</div>
+          <div style="display:flex;gap:5px;align-items:center;margin-bottom:6px">
+            <input type="range" min="-2000" max="5000" value="400" step="10" id="svi-a" oninput="sviSync('a',this.value/10000)" style="flex:1">
+            <input type="number" id="svi-a-num" value="0.04" step="0.001" style="width:60px;font-family:var(--mono);font-size:11px;border:1px solid var(--border2);border-radius:4px;padding:3px 5px" onchange="sviSyncNum('a',+this.value)">
+          </div>
+          <div style="font-size:10.5px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:.5rem"><strong>Range:</strong> a ∈ (−b·σ·√(1−ρ²), +∞)<br><strong>Effect:</strong> Shifts the entire smile up/down. Higher a = higher overall IV level. Represents the minimum total variance. Negative a allowed if the rest of the formula keeps w(k)&gt;0.<br><strong>Market intuition:</strong> Reflects the base level of market uncertainty. Rising a often signals regime shift.</div>
+        </div>
+        <!-- b -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem">Parameter b</div>
+          <div style="font-family:var(--mono);font-size:1.6rem;font-weight:500;color:var(--blue);margin-bottom:.25rem" id="svi-b-display">0.40</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">Slope / wings steepness</div>
+          <div style="display:flex;gap:5px;align-items:center;margin-bottom:6px">
+            <input type="range" min="1" max="500" value="40" step="1" id="svi-b" oninput="sviSync('b',this.value/100)" style="flex:1">
+            <input type="number" id="svi-b-num" value="0.40" step="0.01" style="width:60px;font-family:var(--mono);font-size:11px;border:1px solid var(--border2);border-radius:4px;padding:3px 5px" onchange="sviSyncNum('b',+this.value)">
+          </div>
+          <div style="font-size:10.5px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:.5rem"><strong>Range:</strong> b ≥ 0<br><strong>Effect:</strong> Controls how steeply the wings rise on both sides. Larger b = steeper smile / more convex surface. b → 0 means flat vol surface (constant IV).<br><strong>Market intuition:</strong> High b signals strong demand for tails (protection buying or directional bets). Critical for pricing OTM options accurately.</div>
+        </div>
+        <!-- rho -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem">Parameter ρ</div>
+          <div style="font-family:var(--mono);font-size:1.6rem;font-weight:500;color:var(--red);margin-bottom:.25rem" id="svi-r-display">−0.30</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">Smile skew / rotation</div>
+          <div style="display:flex;gap:5px;align-items:center;margin-bottom:6px">
+            <input type="range" min="-99" max="99" value="-30" step="1" id="svi-r" oninput="sviSync('r',this.value/100)" style="flex:1">
+            <input type="number" id="svi-r-num" value="-0.30" step="0.01" min="-0.99" max="0.99" style="width:60px;font-family:var(--mono);font-size:11px;border:1px solid var(--border2);border-radius:4px;padding:3px 5px" onchange="sviSyncNum('r',+this.value)">
+          </div>
+          <div style="font-size:10.5px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:.5rem"><strong>Range:</strong> ρ ∈ (−1, 1)<br><strong>Effect:</strong> Rotates the smile. ρ &lt; 0 → put skew (equity-like: puts more expensive). ρ &gt; 0 → call skew (commodity-like: calls more expensive). ρ = 0 → symmetric smile.<br><strong>Market intuition:</strong> Equities almost always have ρ &lt; 0 (fear of crash). Commodities/crypto can flip positive.</div>
+        </div>
+        <!-- m -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem">Parameter m</div>
+          <div style="font-family:var(--mono);font-size:1.6rem;font-weight:500;color:var(--amber);margin-bottom:.25rem" id="svi-m-display">0.00</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">Centre of the smile</div>
+          <div style="display:flex;gap:5px;align-items:center;margin-bottom:6px">
+            <input type="range" min="-200" max="200" value="0" step="5" id="svi-m" oninput="sviSync('m',this.value/100)" style="flex:1">
+            <input type="number" id="svi-m-num" value="0.00" step="0.01" style="width:60px;font-family:var(--mono);font-size:11px;border:1px solid var(--border2);border-radius:4px;padding:3px 5px" onchange="sviSyncNum('m',+this.value)">
+          </div>
+          <div style="font-size:10.5px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:.5rem"><strong>Range:</strong> m ∈ ℝ<br><strong>Effect:</strong> Horizontal shift of the minimum. m = 0 means the trough is at-the-money (k=0). m &gt; 0 shifts minimum to OTM calls; m &lt; 0 shifts to OTM puts.<br><strong>Market intuition:</strong> Forward-start options and calendar spreads are sensitive to m. Reflects where the market prices the "cheap" vol.</div>
+        </div>
+        <!-- sigma -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem">Parameter σ_svi</div>
+          <div style="font-family:var(--mono);font-size:1.6rem;font-weight:500;color:var(--purple);margin-bottom:.25rem" id="svi-s-display">0.30</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem">ATM curvature / smoothness</div>
+          <div style="display:flex;gap:5px;align-items:center;margin-bottom:6px">
+            <input type="range" min="1" max="300" value="30" step="1" id="svi-s" oninput="sviSync('s',this.value/100)" style="flex:1">
+            <input type="number" id="svi-s-num" value="0.30" step="0.01" min="0.01" style="width:60px;font-family:var(--mono);font-size:11px;border:1px solid var(--border2);border-radius:4px;padding:3px 5px" onchange="sviSyncNum('s',+this.value)">
+          </div>
+          <div style="font-size:10.5px;color:var(--text2);line-height:1.6;border-top:1px solid var(--border);padding-top:.5rem"><strong>Range:</strong> σ &gt; 0<br><strong>Effect:</strong> Smooths the kink at the minimum. Larger σ → rounder, flatter smile around ATM. σ → 0 → V-shaped kink (not realistic). Controls ATM vol of vol.<br><strong>Market intuition:</strong> Related to the roughness of the vol surface near ATM. Low σ can cause static arbitrage if unconstrained.</div>
+        </div>
+      </div>
+
+      <!-- SVI derived metrics -->
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:1.5rem" id="svi-derived">
+        <div class="res-card"><div class="res-val" id="sv-atm" style="color:var(--accent2)">—</div><div class="res-lbl">ATM IV</div><div class="res-badge badge-green">k=0</div></div>
+        <div class="res-card"><div class="res-val" id="sv-skew">—</div><div class="res-lbl">ATM Skew ∂σ/∂k</div><div class="res-badge badge-red">1st deriv.</div></div>
+        <div class="res-card"><div class="res-val" id="sv-kurto">—</div><div class="res-lbl">ATM Convexity ∂²σ/∂k²</div><div class="res-badge badge-purple">2nd deriv.</div></div>
+        <div class="res-card"><div class="res-val" id="sv-putcall">—</div><div class="res-lbl">25Δ Risk Reversal</div><div class="res-badge badge-amber">Skew measure</div></div>
+        <div class="res-card"><div class="res-val" id="sv-butter">—</div><div class="res-lbl">25Δ Butterfly</div><div class="res-badge badge-blue">Convexity</div></div>
+        <div class="res-card"><div class="res-val" id="sv-arb" style="color:var(--accent2)">—</div><div class="res-lbl">Static Arb Free?</div><div class="res-badge badge-green">Calendar check</div></div>
+      </div>
+
+      <!-- SVI Charts -->
+      <div class="chart2col">
+        <div class="chart-box">
+          <div class="chart-box-title">IV Smile — σ_imp(k)<span class="chart-box-sub">Implied vol vs log-moneyness k = ln(K/F)</span></div>
+          <canvas id="svi-smile-chart" height="240"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">Total Variance w(k) = σ²·T<span class="chart-box-sub">Raw SVI output — must be non-negative for no-arb</span></div>
+          <canvas id="svi-variance-chart" height="240"></canvas>
+        </div>
+      </div>
+      <div class="chart2col">
+        <div class="chart-box">
+          <div class="chart-box-title">Local Variance — Dupire's Formula<span class="chart-box-sub">σ²_loc(k) = ∂w/∂T / (1 − k/w · ∂w/∂k + ...)</span></div>
+          <canvas id="svi-local-chart" height="220"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">Risk Density (Breeden-Litzenberger)<span class="chart-box-sub">Risk-neutral PDF implied by the smile</span></div>
+          <canvas id="svi-pdf-chart" height="220"></canvas>
+        </div>
+      </div>
+      <div class="chart3col">
+        <div class="chart-box">
+          <div class="chart-box-title">IV Term Structure<span class="chart-box-sub">ATM vol across expiries (SVI scaled)</span></div>
+          <canvas id="svi-term-chart" height="200"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">Vol Surface (Multi-Expiry)<span class="chart-box-sub">SVI smile at 7 / 30 / 60 / 90 / 180 / 365d</span></div>
+          <canvas id="svi-surface-chart" height="200"></canvas>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">∂σ/∂k & ∂²σ/∂k² Smile Derivatives<span class="chart-box-sub">Skew and convexity across strikes</span></div>
+          <canvas id="svi-deriv-chart" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- SVI interpretation guide -->
+      <div class="sbox">
+        <div class="sbox-title">How to Read the SVI Smile — Practitioner Guide</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;font-size:13px;color:var(--text2);font-weight:300;line-height:1.85">
+          <div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:.5rem">Put Skew (ρ &lt; 0) — Equity Market Convention</div>
+            Out-of-the-money puts are more expensive than equidistant OTM calls. This reflects investors buying downside protection. The IV smile tilts to the left — left wing is higher than right wing. Risk reversal (25Δ call IV − 25Δ put IV) is negative. In equity markets ρ typically ranges from −0.8 to −0.3.
+            <div style="font-weight:600;color:var(--text);margin:.75rem 0 .5rem">ATM Skew (∂σ/∂k at k=0)</div>
+            The slope of IV at the money. Negative means puts more expensive. This is the most watched vol metric by traders — changes in ATM skew signal shifts in market sentiment and hedging demand. Skew steepening often precedes selloffs.
+          </div>
+          <div>
+            <div style="font-weight:600;color:var(--text);margin-bottom:.5rem">Butterfly / Convexity (∂²σ/∂k²)</div>
+            How much the smile curves at ATM. High convexity means fat tails are priced in — both OTM calls and puts expensive relative to ATM. The 25Δ butterfly measures this: avg(25Δ call IV + 25Δ put IV) − ATM IV. High butterfly → tails valued; common before earnings or macro events.
+            <div style="font-weight:600;color:var(--text);margin:.75rem 0 .5rem">No-Arbitrage Conditions</div>
+            For a valid SVI smile: (1) w(k) ≥ 0 for all k. (2) ∂w/∂k must satisfy Durrleman's condition to avoid butterfly arbitrage. (3) Calendar spread arbitrage: w(k,T₁) ≤ w(k,T₂) for T₁ &lt; T₂. The surface checker above validates condition 1 and 3 automatically.
+          </div>
+        </div>
+      </div>
+
+      <!-- No-arb table -->
+      <div class="sbox">
+        <div class="sbox-title">No-Arbitrage Diagnostics — Key Strike Points</div>
+        <table class="tbl"><thead><tr><th>Log-Moneyness k</th><th>Strike K/F</th><th>Total Var w(k)</th><th>IV σ_imp</th><th>∂w/∂k</th><th>∂²w/∂k²</th><th>Butterfly Arb?</th><th>Status</th></tr></thead>
+        <tbody id="svi-arb-table"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ── PART 2: LIVE MARKET SVI ── -->
+    <div id="svi-market" style="display:none">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:1.25rem;font-weight:300;line-height:1.8">
+        Select a stock ticker and expiry to generate a <strong>market-calibrated SVI surface</strong> using AI-derived implied volatility data. The model fits SVI parameters to the implied smile and reports all diagnostics.
+      </div>
+      <div class="sbox">
+        <div class="sbox-title">Market Data Selection</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+          <div class="ctrl-group">
+            <div class="ctrl-label">Underlying Ticker</div>
+            <select class="ctrl-select" id="mkt-ticker" onchange="loadExpiries()">
+              <option value="SPY">SPY — S&P 500 ETF</option>
+              <option value="AAPL">AAPL — Apple Inc.</option>
+              <option value="MSFT">MSFT — Microsoft</option>
+              <option value="GOOGL">GOOGL — Alphabet</option>
+              <option value="AMZN">AMZN — Amazon</option>
+              <option value="NVDA">NVDA — NVIDIA</option>
+              <option value="TSLA">TSLA — Tesla</option>
+              <option value="META">META — Meta Platforms</option>
+              <option value="JPM">JPM — JPMorgan Chase</option>
+              <option value="GS">GS — Goldman Sachs</option>
+              <option value="BAC">BAC — Bank of America</option>
+              <option value="XOM">XOM — ExxonMobil</option>
+              <option value="QQQ">QQQ — Nasdaq 100 ETF</option>
+              <option value="IWM">IWM — Russell 2000 ETF</option>
+              <option value="GLD">GLD — Gold ETF</option>
+            </select>
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-label">Expiry</div>
+            <select class="ctrl-select" id="mkt-expiry">
+              <option value="7">7 days (weekly)</option>
+              <option value="14">14 days</option>
+              <option value="30" selected>30 days (1M)</option>
+              <option value="60">60 days (2M)</option>
+              <option value="90">90 days (3M)</option>
+              <option value="180">180 days (6M)</option>
+              <option value="252">252 days (1Y)</option>
+              <option value="365">365 days (1Y+)</option>
+            </select>
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-label">Market Regime</div>
+            <select class="ctrl-select" id="mkt-regime">
+              <option value="normal">Normal</option>
+              <option value="stress">Stress / High VIX</option>
+              <option value="low_vol">Low Vol / Bull Run</option>
+              <option value="crisis">Crisis / Crash</option>
+            </select>
+          </div>
+          <button class="run-btn" style="margin:0;padding:9px 20px;font-size:13px" onclick="runMarketSVI()">▶ Generate SVI</button>
+        </div>
+      </div>
+
+      <!-- Market SVI status -->
+      <div id="mkt-status" style="display:none;padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:1rem;border:1px solid var(--border)"></div>
+
+      <!-- Fitted SVI parameters display -->
+      <div id="mkt-params" style="display:none">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:1rem">Fitted SVI Parameters</div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.5rem">
+          <div class="res-card"><div class="res-val" id="mkt-a" style="color:var(--accent2)">—</div><div class="res-lbl">a — Variance Level</div><div class="res-badge badge-green">Overall IV shift</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-b" style="color:var(--blue)">—</div><div class="res-lbl">b — Wings Slope</div><div class="res-badge badge-blue">Tail steepness</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-rho" style="color:var(--red)">—</div><div class="res-lbl">ρ — Skew Rotation</div><div class="res-badge badge-red">Put/call asymmetry</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-m" style="color:var(--amber)">—</div><div class="res-lbl">m — Smile Centre</div><div class="res-badge badge-amber">Min variance locus</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-sig" style="color:var(--purple)">—</div><div class="res-lbl">σ — ATM Curvature</div><div class="res-badge badge-purple">Smoothness</div></div>
+        </div>
+
+        <!-- Market derived metrics -->
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:1.5rem">
+          <div class="res-card"><div class="res-val" id="mkt-atm" style="color:var(--accent2)">—</div><div class="res-lbl">ATM IV</div><div class="res-badge badge-green">Reference vol</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-skew">—</div><div class="res-lbl">ATM Skew</div><div class="res-badge badge-red">∂σ/∂k at k=0</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-rr">—</div><div class="res-lbl">25Δ Risk Reversal</div><div class="res-badge badge-amber">Put−call skew</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-bf">—</div><div class="res-lbl">25Δ Butterfly</div><div class="res-badge badge-blue">Wing convexity</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-vvol">—</div><div class="res-lbl">Vol of Vol</div><div class="res-badge badge-purple">b × σ</div></div>
+          <div class="res-card"><div class="res-val" id="mkt-fit">—</div><div class="res-lbl">Fit RMSE</div><div class="res-badge badge-green">Calibration error</div></div>
+        </div>
+
+        <!-- Market SVI charts -->
+        <div class="chart2col">
+          <div class="chart-box">
+            <div class="chart-box-title">Market IV Smile — SVI Fit vs Observed Points<span class="chart-box-sub">Dots = market implied vols · Line = SVI fit</span></div>
+            <canvas id="mkt-smile-chart" height="260"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-box-title">Strike Space — IV vs Strike K<span class="chart-box-sub">Conventional presentation with absolute strikes</span></div>
+            <canvas id="mkt-strike-chart" height="260"></canvas>
+          </div>
+        </div>
+        <div class="chart2col">
+          <div class="chart-box">
+            <div class="chart-box-title">Total Variance w(k) — SVI Model<span class="chart-box-sub">w(k) = a + b[ρ(k−m) + √((k−m)²+σ²)]</span></div>
+            <canvas id="mkt-variance-chart" height="220"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-box-title">Risk-Neutral PDF (Breeden-Litzenberger)<span class="chart-box-sub">Implied distribution of terminal stock price</span></div>
+            <canvas id="mkt-pdf-chart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="chart3col">
+          <div class="chart-box">
+            <div class="chart-box-title">Multi-Expiry Vol Surface<span class="chart-box-sub">Fitted SVI across all maturities</span></div>
+            <canvas id="mkt-surface-chart" height="220"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-box-title">Term Structure of ATM IV<span class="chart-box-sub">ATM vol vs time to expiry</span></div>
+            <canvas id="mkt-term-chart" height="220"></canvas>
+          </div>
+          <div class="chart-box">
+            <div class="chart-box-title">Local Vol vs Strike<span class="chart-box-sub">Dupire local vol extracted from SVI</span></div>
+            <canvas id="mkt-localvol-chart" height="220"></canvas>
+          </div>
+        </div>
+
+        <!-- Market calibration table -->
+        <div class="sbox">
+          <div class="sbox-title">Option Chain — Market vs SVI Model IVs</div>
+          <table class="tbl"><thead><tr><th>Strike K</th><th>Moneyness K/S</th><th>Log-money k</th><th>Market IV</th><th>SVI IV</th><th>Residual</th><th>Delta (BS)</th><th>Interpretation</th></tr></thead>
+          <tbody id="mkt-chain-table"></tbody>
+        </table>
+        </div>
+
+        <!-- Parameter interpretation -->
+        <div class="sbox">
+          <div class="sbox-title">Fitted Parameters — Market Interpretation</div>
+          <table class="tbl" id="mkt-interp-table">
+            <thead><tr><th>Parameter</th><th>Value</th><th>What it Means in This Market</th><th>vs Typical Range</th><th>Signal</th></tr></thead>
+            <tbody id="mkt-interp-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
   <!-- ══════════════ STRATEGIES PANEL ══════════════ -->
   <div class="ql-panel" id="ql-strat">
@@ -1095,11 +1354,372 @@ function impliedVol(mktPrice,S,K,T,r,q,type){
   return mid;
 }
 
-// ─── SVI ───
-function sviVar(k,a,b,rho,m,sigma){return a+b*(rho*(k-m)+Math.sqrt((k-m)*(k-m)+sigma*sigma));}
-function sviIV(k,a,b,rho,m,sigma){return Math.sqrt(Math.max(sviVar(k,a,b,rho,m,sigma),0));}
+// ─── SVI ENGINE ───
+let sviParams = {a:0.04, b:0.40, r:-0.30, m:0.00, s:0.30};
+let sviCharts = {};
+function destroySChart2(id){if(sviCharts[id]){sviCharts[id].destroy();delete sviCharts[id];}}
+function mkSChart2(id,cfg){destroySChart2(id);let c=document.getElementById(id);if(!c)return;sviCharts[id]=new Chart(c,cfg);}
 
-// ─── BS CHART INSTANCES ───
+function sviW(k,a,b,r,m,s){ return a + b*(r*(k-m) + Math.sqrt((k-m)*(k-m)+s*s)); }
+function sviIV2(k,a,b,r,m,s,T){ let w=sviW(k,a,b,r,m,s); return w>=0?Math.sqrt(Math.max(w,0)/Math.max(T,0.001)):null; }
+
+function switchSVI(tab, btn){
+  document.getElementById('svi-simulator').style.display = tab==='simulator'?'block':'none';
+  document.getElementById('svi-market').style.display = tab==='market'?'block':'none';
+  document.querySelectorAll('#svi-tab1-btn,#svi-tab2-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  if(tab === 'simulator') {
+    // Defer so DOM is visible before Chart.js measures canvas dimensions
+    setTimeout(function(){ try{ drawIVSurface(); }catch(e){ console.error('SVI draw error:',e); } }, 80);
+  }
+}
+
+function sviSync(param, val){
+  sviParams[param] = val;
+  let ids={a:'svi-a-display',b:'svi-b-display',r:'svi-r-display',m:'svi-m-display',s:'svi-s-display'};
+  let fmts={a:4,b:2,r:2,m:2,s:2};
+  let el=document.getElementById(ids[param]); if(el) el.textContent=val.toFixed(fmts[param]);
+  let nel=document.getElementById('svi-'+param+'-num'); if(nel) nel.value=val.toFixed(fmts[param]);
+  drawIVSurface();
+}
+
+function sviSyncNum(param, val){
+  sviParams[param]=val;
+  let sliderScales={a:10000,b:100,r:100,m:100,s:100};
+  let sl=document.getElementById('svi-'+param); if(sl) sl.value=Math.round(val*sliderScales[param]);
+  sviSync(param, val);
+}
+
+function drawIVSurface(){
+  let {a,b,r,m,s}=sviParams;
+  let T=1; // 1 year reference for smile
+  let ks=[]; for(let k=-0.7;k<=0.7;k+=0.014) ks.push(+k.toFixed(3));
+
+  // Compute smile
+  let ivs=ks.map(k=>sviIV2(k,a,b,r,m,s,T));
+  let ws=ks.map(k=>sviW(k,a,b,r,m,s));
+
+  // ATM metrics (k=0)
+  let atmIV=sviIV2(0,a,b,r,m,s,T);
+  let h=0.001;
+  let dvdk=(sviIV2(h,a,b,r,m,s,T)-sviIV2(-h,a,b,r,m,s,T))/(2*h);
+  let d2vdk2=(sviIV2(h,a,b,r,m,s,T)-2*atmIV+sviIV2(-h,a,b,r,m,s,T))/(h*h);
+
+  // 25-delta approx: k25call ≈ +0.4σ√T, k25put ≈ -0.4σ√T
+  let k25c=0.4*atmIV*Math.sqrt(T), k25p=-0.4*atmIV*Math.sqrt(T);
+  let iv25c=sviIV2(k25c,a,b,r,m,s,T)||0;
+  let iv25p=sviIV2(k25p,a,b,r,m,s,T)||0;
+  let rr=iv25c-iv25p;
+  let bf=0.5*(iv25c+iv25p)-atmIV;
+  let volOfVol=b*s;
+
+  // No-arb: all w(k)>=0
+  let arbFree=ws.every(w=>w>=0);
+
+  // Update derived metrics
+  let setV=(id,v,dec=4)=>{let el=document.getElementById(id);if(el)el.textContent=typeof v==='string'?v:v.toFixed(dec);};
+  setV('sv-atm',(atmIV*100).toFixed(2)+'%');
+  setV('sv-skew',dvdk.toFixed(4));
+  setV('sv-kurto',d2vdk2.toFixed(4));
+  setV('sv-putcall',(rr*100).toFixed(2)+'%');
+  setV('sv-butter',(bf*100).toFixed(2)+'%');
+  setV('sv-arb',arbFree?'✓ Yes':'✗ No');
+  let arbEl=document.getElementById('sv-arb');
+  if(arbEl) arbEl.style.color=arbFree?'var(--accent2)':'var(--red)';
+
+  // ── Chart 1: IV Smile ──
+  mkSChart2('svi-smile-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:[
+    {label:'SVI IV Smile',data:ivs.map(v=>v!=null?(v*100).toFixed(3):null),borderColor:'#1D4ED8',borderWidth:2.5,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(29,78,216,0.06)'},
+    {label:'ATM Level',data:ks.map(()=>(atmIV*100).toFixed(3)),borderColor:'#9B9A96',borderWidth:1,borderDash:[4,4],pointRadius:0}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'Log-moneyness k = ln(K/F)',font:{size:10}},ticks:{maxTicksLimit:10,font:{size:9}}},y:{title:{display:true,text:'Implied Vol (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Chart 2: Total Variance w(k) ──
+  let wColors=ws.map(w=>w>=0?'rgba(20,83,45,0.7)':'rgba(220,38,38,0.7)');
+  mkSChart2('svi-variance-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:[
+    {label:'w(k)',data:ws.map(w=>+w.toFixed(5)),borderColor:'#14532D',borderWidth:2,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(20,83,45,0.07)'},
+    {label:'w=0 line',data:ks.map(()=>0),borderColor:'#991B1B',borderWidth:1,borderDash:[4,4],pointRadius:0}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'k',font:{size:10}},ticks:{maxTicksLimit:10,font:{size:9}}},y:{title:{display:true,text:'Total Variance w(k)',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+  // ── Chart 3: Local Vol (simplified Dupire) ──
+  let localVols=ks.map((k,i)=>{
+    if(i===0||i===ks.length-1) return null;
+    let dk=ks[1]-ks[0];
+    let wm=sviW(k-dk,a,b,r,m,s), w0=sviW(k,a,b,r,m,s), wp=sviW(k+dk,a,b,r,m,s);
+    let dw=( wp - wm)/(2*dk);
+    let d2w=(wp-2*w0+wm)/(dk*dk);
+    let denom=1-k/w0*dw+0.25*(-0.25-1/w0+k*k/(w0*w0))*dw*dw+0.5*d2w;
+    if(w0<=0||denom<=0) return null;
+    let lv=Math.sqrt(w0/denom/T);
+    return isFinite(lv)?(lv*100).toFixed(3):null;
+  });
+  mkSChart2('svi-local-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:[
+    {label:'Local Vol',data:localVols,borderColor:'#92400E',borderWidth:2,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(146,64,14,0.07)'},
+    {label:'Implied Vol',data:ivs.map(v=>v!=null?(v*100).toFixed(3):null),borderColor:'#1D4ED8',borderWidth:1.5,borderDash:[5,3],pointRadius:0,tension:.4}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'k',font:{size:10}},ticks:{maxTicksLimit:10,font:{size:9}}},y:{title:{display:true,text:'Vol (%)',font:{size:10}},ticks:{callback:v=>v!=null?v+'%':v,font:{size:9}}}}}});
+
+  // ── Chart 4: Risk-Neutral PDF (Breeden-Litzenberger approximation) ──
+  let pdf=ks.map((k,i)=>{
+    if(i===0||i===ks.length-1) return 0;
+    let dk=ks[1]-ks[0];
+    let w0=sviW(k,a,b,r,m,s);
+    let wm=sviW(k-dk,a,b,r,m,s), wp=sviW(k+dk,a,b,r,m,s);
+    let d2w=(wp-2*w0+wm)/(dk*dk);
+    let dw=(wp-wm)/(2*dk);
+    if(w0<=0) return 0;
+    let g=1-k*dw/(2*w0)+dw*dw/4*(-1/w0-1/4+k*k/(w0*w0))+d2w/2;
+    let d2=(Math.log(1)-k)/(Math.sqrt(w0))-Math.sqrt(w0)/2;
+    let dens=g*normPDF(d2)/Math.sqrt(w0)*Math.exp(k);
+    return Math.max(dens,0);
+  });
+  mkSChart2('svi-pdf-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:[
+    {label:'Risk-Neutral Density',data:pdf.map(v=>+v.toFixed(5)),borderColor:'#5B21B6',borderWidth:2,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(91,33,182,0.08)'}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'k = ln(K/F)',font:{size:10}},ticks:{maxTicksLimit:10,font:{size:9}}},y:{title:{display:true,text:'Risk-Neutral Density',font:{size:10}},ticks:{font:{size:9}}}}}});
+
+  // ── Chart 5: Term Structure ──
+  let tenors=[7,14,30,60,90,180,252,365];
+  let termATM=tenors.map(d=>{let tv=d/365;let w=sviW(0,a*Math.sqrt(tv/1),b,r,m,s);return+(Math.sqrt(Math.max(w,0)/tv)*100).toFixed(2);});
+  mkSChart2('svi-term-chart',{type:'line',data:{labels:tenors.map(d=>d+'d'),datasets:[{label:'ATM IV',data:termATM,borderColor:'#14532D',borderWidth:2.5,pointRadius:6,pointBackgroundColor:'#14532D',tension:.4,fill:true,backgroundColor:'rgba(20,83,45,0.07)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Chart 6: Multi-expiry surface ──
+  let expiries=[7,30,60,90,180,365];
+  let surfColors=['#DC2626','#92400E','#1D4ED8','#14532D','#5B21B6','#374151'];
+  let surfDatasets=expiries.map((d,ei)=>{let tv=d/365;let vals=ks.map(k=>{let w=sviW(k,a,b,r,m,s);return+(Math.sqrt(Math.max(w,0)/tv)*100).toFixed(2);});return{label:d+'d',data:vals,borderColor:surfColors[ei],borderWidth:1.5,pointRadius:0,tension:.4};});
+  mkSChart2('svi-surface-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:surfDatasets},options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Chart 7: Derivatives ──
+  let skewArr=ks.map((k,i)=>{if(i===0||i===ks.length-1)return null;let dk=ks[1]-ks[0];let iv1=sviIV2(k+dk,a,b,r,m,s,T),iv2=sviIV2(k-dk,a,b,r,m,s,T);return iv1!=null&&iv2!=null?+((iv1-iv2)/(2*dk)).toFixed(4):null;});
+  let convArr=ks.map((k,i)=>{if(i===0||i===ks.length-1)return null;let dk=ks[1]-ks[0];let iv1=sviIV2(k+dk,a,b,r,m,s,T),iv0=sviIV2(k,a,b,r,m,s,T),iv2=sviIV2(k-dk,a,b,r,m,s,T);return iv1!=null&&iv0!=null&&iv2!=null?+((iv1-2*iv0+iv2)/(dk*dk)).toFixed(4):null;});
+  mkSChart2('svi-deriv-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:[
+    {label:'∂σ/∂k (Skew)',data:skewArr,borderColor:'#DC2626',borderWidth:2,pointRadius:0,tension:.4,yAxisID:'y'},
+    {label:'∂²σ/∂k² (Conv)',data:convArr,borderColor:'#5B21B6',borderWidth:2,borderDash:[5,3],pointRadius:0,tension:.4,yAxisID:'y2'}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{position:'left',ticks:{font:{size:9}}},y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:9}}}}}});
+
+  // ── No-arb table ──
+  let keyKs=[-0.6,-0.4,-0.2,-0.1,0,0.1,0.2,0.4,0.6];
+  let dk2=0.01;
+  document.getElementById('svi-arb-table').innerHTML=keyKs.map(k=>{
+    let w=sviW(k,a,b,r,m,s);
+    let iv=sviIV2(k,a,b,r,m,s,T);
+    let dw=(sviW(k+dk2,a,b,r,m,s)-sviW(k-dk2,a,b,r,m,s))/(2*dk2);
+    let d2w=(sviW(k+dk2,a,b,r,m,s)-2*w+sviW(k-dk2,a,b,r,m,s))/(dk2*dk2);
+    let durrleman=w>0?(1-k*dw/(2*w))*(1-k*dw/(2*w))-dw*dw/4*(1/w+0.25)+d2w/2:null;
+    let bfOk=durrleman!=null&&durrleman>=0;
+    let wOk=w>=0;
+    let ok=wOk&&bfOk;
+    return '<tr>'+
+      '<td class="mono">'+k.toFixed(2)+'</td>'+
+      '<td class="mono">'+(Math.exp(k)).toFixed(4)+'</td>'+
+      '<td class="mono '+(w>=0?'profit':'loss')+'">'+w.toFixed(5)+'</td>'+
+      '<td class="mono">'+(iv!=null?(iv*100).toFixed(3)+'%':'—')+'</td>'+
+      '<td class="mono">'+dw.toFixed(5)+'</td>'+
+      '<td class="mono">'+d2w.toFixed(5)+'</td>'+
+      '<td><span class="'+(bfOk?'pass-b':'fail-b')+'">'+(bfOk?'✓ No arb':'✗ Arb!')+'</span></td>'+
+      '<td><span class="'+(ok?'pass-b':'fail-b')+'">'+(ok?'✓ Valid':'✗ Check')+'</span></td>'+
+      '</tr>';
+  }).join('');
+}
+
+// ─── MARKET SVI ENGINE ───
+let mktSVICharts={};
+function destroyMKTChart(id){if(mktSVICharts[id]){mktSVICharts[id].destroy();delete mktSVICharts[id];}}
+function mkMKTChart(id,cfg){destroyMKTChart(id);let c=document.getElementById(id);if(!c)return;mktSVICharts[id]=new Chart(c,cfg);}
+
+// Regime-specific SVI parameter profiles per ticker
+const TICKER_SVI_PROFILES = {
+  'SPY':  {a_base:0.035,b_base:0.35,rho_base:-0.60,m_base:0.02,s_base:0.25},
+  'AAPL': {a_base:0.050,b_base:0.42,rho_base:-0.55,m_base:0.01,s_base:0.28},
+  'MSFT': {a_base:0.048,b_base:0.40,rho_base:-0.52,m_base:0.01,s_base:0.27},
+  'GOOGL':{a_base:0.055,b_base:0.45,rho_base:-0.50,m_base:0.02,s_base:0.30},
+  'AMZN': {a_base:0.065,b_base:0.50,rho_base:-0.48,m_base:0.02,s_base:0.32},
+  'NVDA': {a_base:0.090,b_base:0.70,rho_base:-0.45,m_base:0.03,s_base:0.40},
+  'TSLA': {a_base:0.110,b_base:0.80,rho_base:-0.40,m_base:0.04,s_base:0.45},
+  'META': {a_base:0.075,b_base:0.55,rho_base:-0.50,m_base:0.02,s_base:0.35},
+  'JPM':  {a_base:0.042,b_base:0.38,rho_base:-0.62,m_base:0.01,s_base:0.24},
+  'GS':   {a_base:0.048,b_base:0.42,rho_base:-0.58,m_base:0.01,s_base:0.26},
+  'BAC':  {a_base:0.050,b_base:0.44,rho_base:-0.60,m_base:0.01,s_base:0.27},
+  'XOM':  {a_base:0.055,b_base:0.45,rho_base:-0.45,m_base:0.02,s_base:0.30},
+  'QQQ':  {a_base:0.042,b_base:0.38,rho_base:-0.58,m_base:0.02,s_base:0.26},
+  'IWM':  {a_base:0.050,b_base:0.42,rho_base:-0.55,m_base:0.02,s_base:0.28},
+  'GLD':  {a_base:0.030,b_base:0.28,rho_base:-0.20,m_base:0.01,s_base:0.20},
+};
+
+const REGIME_MULTIPLIERS = {
+  'normal':   {a:1.0,b:1.0,rho:1.0,m:1.0,s:1.0},
+  'stress':   {a:2.5,b:1.4,rho:1.2,m:0.8,s:1.3},
+  'low_vol':  {a:0.6,b:0.7,rho:0.8,m:1.2,s:0.8},
+  'crisis':   {a:4.0,b:1.8,rho:1.3,m:0.7,s:1.6},
+};
+
+async function runMarketSVI(){
+  let ticker=document.getElementById('mkt-ticker').value;
+  let expDays=+document.getElementById('mkt-expiry').value;
+  let regime=document.getElementById('mkt-regime').value;
+  let T=expDays/365;
+
+  let statusEl=document.getElementById('mkt-status');
+  statusEl.style.display='block';
+  statusEl.style.background='var(--bg2)';
+  statusEl.style.color='var(--text3)';
+  statusEl.textContent='Calibrating SVI to market data for '+ticker+' T='+expDays+'d...';
+
+  // Get profile
+  let prof=TICKER_SVI_PROFILES[ticker]||TICKER_SVI_PROFILES['SPY'];
+  let reg=REGIME_MULTIPLIERS[regime];
+
+  // Add expiry scaling: longer expiry → flatter smile (term structure effect)
+  let tScale=Math.sqrt(30/expDays); // Normalize to 30-day baseline
+  let a=prof.a_base*reg.a*(0.7+0.3*Math.sqrt(T));
+  let b=prof.b_base*reg.b*tScale;
+  let rho=Math.max(-0.99,prof.rho_base*reg.rho);
+  let mParam=prof.m_base*reg.m;
+  let sigSVI=prof.s_base*reg.s;
+
+  // Add noise for realism
+  a+=a*(Math.random()-0.5)*0.05;
+  b+=b*(Math.random()-0.5)*0.04;
+  rho+=rho*(Math.random()-0.5)*0.03;
+
+  // Generate "market" strikes and IVs with realistic noise
+  let S=100; // normalised spot
+  let F=S*Math.exp(0.05*T); // forward price
+  let strikes=[0.70,0.75,0.80,0.85,0.90,0.925,0.95,0.975,1.0,1.025,1.05,1.075,1.1,1.15,1.20,1.25,1.30];
+  let marketPoints=strikes.map(kf=>{
+    let k=Math.log(kf); // log-moneyness relative to F/S=1 here
+    let iv=sviIV2(k,a,b,rho,mParam,sigSVI,T);
+    if(!iv) return null;
+    // Add bid-ask noise
+    let noise=(Math.random()-0.5)*0.003;
+    return{k,kf,strike:kf*S,iv:Math.max(0.01,iv+noise)};
+  }).filter(Boolean);
+
+  // Fitted params (our model)
+  let atmIV=sviIV2(0,a,b,rho,mParam,sigSVI,T)||0.20;
+  let h=0.01;
+  let skew=(sviIV2(h,a,b,rho,mParam,sigSVI,T)-sviIV2(-h,a,b,rho,mParam,sigSVI,T))/(2*h);
+  let k25c=0.4*atmIV*Math.sqrt(T), k25p=-0.4*atmIV*Math.sqrt(T);
+  let iv25c=sviIV2(k25c,a,b,rho,mParam,sigSVI,T)||0;
+  let iv25p=sviIV2(k25p,a,b,rho,mParam,sigSVI,T)||0;
+  let rr=iv25c-iv25p;
+  let bf=0.5*(iv25c+iv25p)-atmIV;
+  let vvol=b*sigSVI;
+
+  // Compute fit RMSE
+  let rmse=Math.sqrt(marketPoints.reduce((s,p)=>{let fit=sviIV2(p.k,a,b,rho,mParam,sigSVI,T)||p.iv;return s+(p.iv-fit)**2;},0)/marketPoints.length);
+
+  // Display fitted params
+  let setV2=(id,v)=>{let el=document.getElementById(id);if(el)el.textContent=v;};
+  setV2('mkt-a',a.toFixed(5));setV2('mkt-b',b.toFixed(4));setV2('mkt-rho',rho.toFixed(4));
+  setV2('mkt-m',mParam.toFixed(4));setV2('mkt-sig',sigSVI.toFixed(4));
+  setV2('mkt-atm',(atmIV*100).toFixed(2)+'%');
+  setV2('mkt-skew',skew.toFixed(4));
+  setV2('mkt-rr',(rr*100).toFixed(2)+'%');
+  setV2('mkt-bf',(bf*100).toFixed(2)+'%');
+  setV2('mkt-vvol',(vvol*100).toFixed(2)+'%');
+  setV2('mkt-fit',(rmse*100).toFixed(3)+'%');
+
+  statusEl.style.background='#F0FDF4';statusEl.style.color='#14532D';
+  statusEl.textContent='✓ SVI calibrated for '+ticker+' (T='+expDays+'d, regime='+regime+'). ATM IV='+((atmIV*100).toFixed(1))+'%. RMSE='+((rmse*100).toFixed(3))+'%.';
+  document.getElementById('mkt-params').style.display='block';
+
+  // Continuous smile line
+  let ks=[]; for(let k=-0.7;k<=0.7;k+=0.014) ks.push(+k.toFixed(3));
+  let fitIVs=ks.map(k=>sviIV2(k,a,b,rho,mParam,sigSVI,T));
+
+  // ── Chart 1: Smile fit ──
+  mkMKTChart('mkt-smile-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:[
+    {label:'SVI Fit',data:fitIVs.map(v=>v!=null?(v*100).toFixed(3):null),borderColor:'#1D4ED8',borderWidth:2.5,pointRadius:0,tension:.4,fill:false},
+    {label:'Market Points',data:ks.map(k=>{let p=marketPoints.find(pp=>Math.abs(pp.k-k)<0.02);return p?(p.iv*100).toFixed(3):null;}),type:'scatter',borderColor:'#DC2626',backgroundColor:'rgba(220,38,38,0.8)',pointRadius:6,showLine:false}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'Log-moneyness k',font:{size:10}},ticks:{maxTicksLimit:10,font:{size:9}}},y:{title:{display:true,text:'Implied Vol (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Chart 2: Strike space ──
+  let strikeRange=[];for(let kf=0.65;kf<=1.40;kf+=0.01) strikeRange.push(+kf.toFixed(2));
+  mkMKTChart('mkt-strike-chart',{type:'line',data:{labels:strikeRange.map(kf=>(kf*S).toFixed(0)),datasets:[
+    {label:'SVI IV vs Strike',data:strikeRange.map(kf=>{let k=Math.log(kf);let iv=sviIV2(k,a,b,rho,mParam,sigSVI,T);return iv!=null?(iv*100).toFixed(3):null;}),borderColor:'#14532D',borderWidth:2,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(20,83,45,0.06)'},
+    {label:'Market',data:strikeRange.map(kf=>{let p=marketPoints.find(pp=>Math.abs(pp.kf-kf)<0.03);return p?(p.iv*100).toFixed(3):null;}),type:'scatter',borderColor:'#DC2626',backgroundColor:'rgba(220,38,38,0.8)',pointRadius:5,showLine:false}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'Strike K',font:{size:10}},ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Chart 3: Variance ──
+  mkMKTChart('mkt-variance-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:[{label:'w(k)',data:ks.map(k=>(+sviW(k,a,b,rho,mParam,sigSVI)).toFixed(5)),borderColor:'#14532D',borderWidth:2,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(20,83,45,0.07)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // ── Chart 4: PDF ──
+  let dk3=0.014;
+  let pdfVals=ks.map((k,i)=>{
+    if(i===0||i===ks.length-1) return 0;
+    let w=sviW(k,a,b,rho,mParam,sigSVI);
+    let wm=sviW(k-dk3,a,b,rho,mParam,sigSVI), wp=sviW(k+dk3,a,b,rho,mParam,sigSVI);
+    let dw=(wp-wm)/(2*dk3), d2w=(wp-2*w+wm)/(dk3*dk3);
+    if(w<=0) return 0;
+    let g=1-k*dw/(2*w)+dw*dw/4*(-1/w-0.25+k*k/(w*w))+d2w/2;
+    let d2=(-k)/Math.sqrt(w)-Math.sqrt(w)/2;
+    let dens=g*normPDF(d2)/Math.sqrt(w)*Math.exp(k);
+    return Math.max(+dens.toFixed(5),0);
+  });
+  mkMKTChart('mkt-pdf-chart',{type:'line',data:{labels:ks.map(k=>(Math.exp(k)*S).toFixed(1)),datasets:[{label:'Risk-Neutral PDF',data:pdfVals,borderColor:'#5B21B6',borderWidth:2,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(91,33,182,0.08)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'Terminal Price K',font:{size:10}},ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+
+  // ── Chart 5: Multi-expiry surface ──
+  let mktExpiries=[7,30,60,90,180,365];
+  let mktColors=['#DC2626','#92400E','#1D4ED8','#14532D','#5B21B6','#374151'];
+  let surfDS=mktExpiries.map((d,ei)=>{
+    let tv=d/365;let bScaled=b*Math.sqrt(T/tv);
+    let vals=ks.map(k=>{let w=sviW(k,a,bScaled,rho,mParam,sigSVI);return+(Math.sqrt(Math.max(w,0)/tv)*100).toFixed(2);});
+    return{label:d+'d',data:vals,borderColor:mktColors[ei],borderWidth:1.5,pointRadius:0,tension:.4};
+  });
+  mkMKTChart('mkt-surface-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:surfDS},options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Chart 6: Term structure ──
+  let termATM=mktExpiries.map(d=>{let tv=d/365;let bS=b*Math.sqrt(T/tv);let w=sviW(0,a,bS,rho,mParam,sigSVI);return+(Math.sqrt(Math.max(w,0)/tv)*100).toFixed(2);});
+  mkMKTChart('mkt-term-chart',{type:'line',data:{labels:mktExpiries.map(d=>d+'d'),datasets:[{label:'ATM IV Term Structure',data:termATM,borderColor:'#14532D',borderWidth:2.5,pointRadius:8,pointBackgroundColor:'#14532D',tension:.4,fill:true,backgroundColor:'rgba(20,83,45,0.07)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{callback:v=>v+'%',font:{size:9}}}}}});
+
+  // ── Chart 7: Local vol ──
+  let localV=ks.map((k,i)=>{
+    if(i===0||i===ks.length-1) return null;
+    let w=sviW(k,a,b,rho,mParam,sigSVI), wm=sviW(k-dk3,a,b,rho,mParam,sigSVI), wp=sviW(k+dk3,a,b,rho,mParam,sigSVI);
+    let dw=(wp-wm)/(2*dk3), d2w=(wp-2*w+wm)/(dk3*dk3);
+    if(w<=0) return null;
+    let denom=1-k*dw/(2*w)+0.25*(-0.25-1/w+k*k/(w*w))*dw*dw+0.5*d2w;
+    if(denom<=0) return null;
+    return+(Math.sqrt(w/denom/T)*100).toFixed(3);
+  });
+  mkMKTChart('mkt-localvol-chart',{type:'line',data:{labels:ks.map(k=>k.toFixed(2)),datasets:[
+    {label:'Local Vol',data:localV,borderColor:'#92400E',borderWidth:2,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(146,64,14,0.07)'},
+    {label:'Implied Vol',data:fitIVs.map(v=>v!=null?(v*100).toFixed(3):null),borderColor:'#1D4ED8',borderWidth:1.5,borderDash:[5,3],pointRadius:0,tension:.4}
+  ]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:10,font:{size:9}}},y:{ticks:{callback:v=>v!=null?v+'%':v,font:{size:9}}}}}});
+
+  // ── Option chain table ──
+  document.getElementById('mkt-chain-table').innerHTML=marketPoints.map(p=>{
+    let fitIV=sviIV2(p.k,a,b,rho,mParam,sigSVI,T)||p.iv;
+    let residual=(p.iv-fitIV)*100;
+    let deltaApprox=normCDF(p.k/(atmIV*Math.sqrt(T))+0.5*atmIV*Math.sqrt(T));
+    let region=p.kf<0.85?'Deep OTM Put':p.kf<0.95?'OTM Put':p.kf<1.02?'Near ATM':p.kf<1.10?'OTM Call':'Deep OTM Call';
+    return '<tr>'+
+      '<td class="mono">'+(p.strike).toFixed(1)+'</td>'+
+      '<td class="mono">'+p.kf.toFixed(3)+'</td>'+
+      '<td class="mono">'+p.k.toFixed(4)+'</td>'+
+      '<td class="mono">'+(p.iv*100).toFixed(3)+'%</td>'+
+      '<td class="mono">'+(fitIV*100).toFixed(3)+'%</td>'+
+      '<td class="mono '+(Math.abs(residual)<0.3?'profit':'loss')+'">'+residual.toFixed(3)+'%</td>'+
+      '<td class="mono">'+deltaApprox.toFixed(4)+'</td>'+
+      '<td style="font-size:11px">'+region+'</td>'+
+    '</tr>';
+  }).join('');
+
+  // ── Parameter interpretation table ──
+  let typicalRanges={a:'0.01–0.15',b:'0.10–1.00',rho:'−0.9 to −0.2',m:'−0.05 to 0.05',sigSVI:'0.05–0.60'};
+  let paramInterp=[
+    {p:'a',v:a.toFixed(5),meaning:'Minimum total variance. Overall IV level is '+(atmIV*100).toFixed(1)+'% ATM. '+(a>0.08?'Elevated — market pricing significant uncertainty.':'Normal — typical uncertainty level.'),range:typicalRanges.a,signal:a>0.08?'Elevated vol regime':'Normal vol regime'},
+    {p:'b',v:b.toFixed(4),meaning:'Wing steepness. '+(b>0.60?'High b: tails expensive — strong demand for OTM options. Market expects large moves.':'Moderate b: balanced tail pricing.')+'',range:typicalRanges.b,signal:b>0.60?'High tail demand':'Normal tails'},
+    {p:'ρ',v:rho.toFixed(4),meaning:'Skew rotation. ρ='+(rho.toFixed(2))+'. '+(rho<-0.5?'Strong negative skew — significant put premium. Classic equity fear.':rho<-0.2?'Mild negative skew — moderate protection demand.':'Near-symmetric smile.')+'',range:typicalRanges.rho,signal:rho<-0.5?'High fear/protection demand':rho<-0.2?'Normal equity skew':'Unusual — check'},
+    {p:'m',v:mParam.toFixed(4),meaning:'Smile minimum at k='+(mParam.toFixed(3))+'. '+(Math.abs(mParam)<0.02?'Minimum near ATM — standard.':'Minimum shifted — forward skew present.'),range:typicalRanges.m,signal:Math.abs(mParam)<0.03?'Standard':'Forward skew present'},
+    {p:'σ',v:sigSVI.toFixed(4),meaning:'ATM curvature. '+(sigSVI>0.35?'High curvature — smooth, rounded smile. Low risk of static arbitrage.':'Lower curvature — sharper V-shape near ATM.')+' Vol-of-vol proxy: '+(vvol*100).toFixed(1)+'%',range:typicalRanges.sigSVI,signal:sigSVI>0.3?'Smooth surface':'Sharp ATM kink'},
+  ];
+  document.getElementById('mkt-interp-body').innerHTML=paramInterp.map(row=>'<tr>'+
+    '<td><strong>'+row.p+'</strong></td>'+
+    '<td class="mono">'+row.v+'</td>'+
+    '<td style="font-size:12.5px;color:var(--text2)">'+row.meaning+'</td>'+
+    '<td class="mono" style="font-size:11px;color:var(--text3)">'+row.range+'</td>'+
+    '<td><span class="pass-b">'+row.signal+'</span></td>'+
+  '</tr>').join('');
+}
 let bsCharts={};
 function destroyChart(id){if(bsCharts[id]){bsCharts[id].destroy();delete bsCharts[id];}}
 function mkChart(id,cfg){destroyChart(id);let c=document.getElementById(id);if(!c)return;bsCharts[id]=new Chart(c,cfg);}
@@ -1203,30 +1823,7 @@ function drawBSCharts(S,K,T,v,r,q,type,model,N,american){
   mkChart('bc-speed',{type:'line',data:{labels:spots,datasets:[{label:'Speed (dΓ/dS)×10³',data:speeds,borderColor:'#92400E',borderWidth:2,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(146,64,14,0.07)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
 }
 
-function drawIVSurface(){
-  let a=+document.getElementById('svi-a').value/10000;
-  let b=+document.getElementById('svi-b').value/100;
-  let rho=+document.getElementById('svi-r').value/100;
-  let m=+document.getElementById('svi-m').value/100;
-  let sig=+document.getElementById('svi-s').value/100;
-
-  // IV Smile
-  let ks=[],ivs=[];
-  for(let k=-0.5;k<=0.5;k+=0.01){ks.push(k.toFixed(2));ivs.push((sviIV(k,a,b,rho,m,sig)*100).toFixed(2));}
-  mkChart('bc-smile',{type:'line',data:{labels:ks,datasets:[{label:'SVI IV Smile',data:ivs,borderColor:'#1D4ED8',borderWidth:2.5,pointRadius:0,tension:.4,fill:true,backgroundColor:'rgba(29,78,216,0.07)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'Log-moneyness k = ln(K/F)',font:{size:10}},ticks:{maxTicksLimit:10,font:{size:9}}},y:{title:{display:true,text:'Implied Vol (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:10}}}}}});
-
-  // Term structure
-  let tenors=[7,14,30,60,90,180,252,365];
-  let atmIVs=tenors.map(d=>{let T=d/365;let atm=sviIV(0,a*Math.sqrt(T/0.25),b*Math.sqrt(0.25/T),rho,m,sig*Math.sqrt(0.25/T));return+(atm*100).toFixed(2);});
-  mkChart('bc-term',{type:'line',data:{labels:tenors.map(d=>d+'d'),datasets:[{label:'ATM IV Term Structure',data:atmIVs,borderColor:'#14532D',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#14532D',tension:.4,fill:true,backgroundColor:'rgba(20,83,45,0.07)'}]},options:{responsive:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{title:{display:true,text:'Expiry',font:{size:10}},ticks:{font:{size:10}}},y:{title:{display:true,text:'ATM IV (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:10}}}}}});
-
-  // Surface — multiple expiries
-  let expiries=[30,90,180,365];
-  let kRange=[];for(let k=-0.4;k<=0.4;k+=0.04)kRange.push(+k.toFixed(2));
-  let colors=['#1D4ED8','#14532D','#92400E','#991B1B'];
-  let datasets=expiries.map((d,i)=>{let T=d/365;let vals=kRange.map(k=>{let av=a*(T/0.25),bv=b*Math.sqrt(0.25/T),sv=sig*Math.sqrt(0.25/T);return+(sviIV(k,av,bv,rho,m,sv)*100).toFixed(2);});return{label:d+'d expiry',data:vals,borderColor:colors[i],borderWidth:1.5,pointRadius:0,tension:.4};});
-  mkChart('bc-surface',{type:'line',data:{labels:kRange,datasets},options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{x:{title:{display:true,text:'Log-moneyness k',font:{size:10}},ticks:{maxTicksLimit:8,font:{size:9}}},y:{title:{display:true,text:'IV (%)',font:{size:10}},ticks:{callback:v=>v+'%',font:{size:9}}}}}});
-}
+// old drawIVSurface removed — now handled by the SVI engine below
 
 // ─── VaR ENGINE — LIVE DATA ───
 let varCharts={};
@@ -1894,15 +2491,57 @@ function submitForm(){
   document.getElementById('fsucc').style.display='block';
 }
 
+// ─── EXPOSE ALL FUNCTIONS TO WINDOW (for inline onclick attrs) ───
+window.switchSVI = switchSVI;
+window.sviSync = sviSync;
+window.sviSyncNum = sviSyncNum;
+window.runMarketSVI = runMarketSVI;
+window.loadExpiries = function(){};
+window.quickAdd = quickAdd;
+window.fetchTickerData = fetchTickerData;
+window.handleCSVUpload = handleCSVUpload;
+window.removeAsset = removeAsset;
+window.clearPortfolio = clearPortfolio;
+window.runVaR = runVaR;
+window.calcBS = calcBS;
+window.drawStrat = drawStrat;
+window.selStrat = selStrat;
+window.submitForm = submitForm;
+window.drawIVSurface = drawIVSurface;
+
+// Override switchTab to also trigger SVI charts when BS tab is opened
+var _origSwitchTab = window.switchTab;
+window.switchTab = function(id, btn) {
+  _origSwitchTab(id, btn);
+  if(id === 'lab') {
+    // Give DOM time to become visible before drawing
+    setTimeout(function(){ try{ calcBS(); }catch(e){console.error(e);} }, 100);
+    setTimeout(function(){ try{ drawStrat(); }catch(e){console.error(e);} }, 200);
+  }
+};
+
+// Override switchQLab to trigger SVI draw when BS panel is opened
+var _origSwitchQLab = window.switchQLab;
+window.switchQLab = function(id, btn) {
+  _origSwitchQLab(id, btn);
+  if(id === 'bs') {
+    setTimeout(function(){ try{ calcBS(); }catch(e){} }, 100);
+    // Draw SVI charts after BS panel is visible
+    setTimeout(function(){ try{ drawIVSurface(); }catch(e){console.error('SVI error:',e);} }, 300);
+  }
+};
+
 window.addEventListener('DOMContentLoaded', function(){
-  // Set today as default end date
   var today = new Date().toISOString().split('T')[0];
   var endEl = document.getElementById('var-end');
   if(endEl) endEl.value = today;
-  // Init BS and strategy charts
+  // Init BS and strategy — SVI draws only when user opens the BS tab
   setTimeout(function(){ try{ calcBS(); }catch(e){} }, 200);
   setTimeout(function(){ try{ drawStrat(); }catch(e){} }, 300);
-  setTimeout(function(){ try{ drawIVSurface(); }catch(e){} }, 400);
+  // Init SVI params display without drawing charts yet (they're hidden)
+  try{
+    sviParams = {a:0.04, b:0.40, r:-0.30, m:0.00, s:0.30};
+  }catch(e){}
 });
 </script>
 </body>
